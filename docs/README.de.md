@@ -1,6 +1,8 @@
 <div align="center">
 
 # trueCORD
+<div align="center">
+ <img src="icon_tC_192.png" width="128" height="128" alt="trueCORD">
 
 **Eine selbst gehostete Chat-Plattform im Discord-Stil, die du wirklich selbst betreiben kannst.**
 
