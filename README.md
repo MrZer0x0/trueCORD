@@ -1,7 +1,8 @@
 <div align="center">
-<img src="icon_tC_192.png" width="128" height="128" alt="trueCORD">
-# trueCORD
 
+#№ trueCORD
+
+<img src="icon_tC_192.png" width="128" height="128" alt="trueCORD">
 **Self-hosted чат в стиле Discord, который реально можно поднять самому.**
 
 Серверы, текстовые каналы, личные сообщения, голосовые комнаты, звонки, реакции и обмен файлами — в одном привычном интерфейсе. Без сборки, без Node, без отдельного сервера БД, за которым нужно следить. Только PHP и один файл SQLite.
