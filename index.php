@@ -218,37 +218,16 @@ body.vglow-remote #voiceGlow .vglow-top{opacity:.26;animation:vglowPulse 2.6s ea
 body.vglow-local #voiceGlow .vglow-bottom{opacity:.3;animation:vglowPulse 2.6s ease-in-out infinite}
 @keyframes vglowPulse{0%,100%{opacity:.16}50%{opacity:.32}}
 @media(prefers-reduced-motion:reduce){body.vglow-remote #voiceGlow .vglow-top,body.vglow-local #voiceGlow .vglow-bottom{animation:none}}
-/* ── Живая анимация (отдельный слой поверх фона, за стеклом) ── */
-#liveScene{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;display:none;filter:blur(2px)}
-body.livescene-on #liveScene{display:block}
-#liveScene .ls-layer{position:absolute;inset:-10% -10% -10% -10%;background-repeat:no-repeat;background-position:center;opacity:.5;will-change:transform}
-/* Слои-«холмы»/волны из мягких градиентов */
-#liveScene .ls-l1{background:radial-gradient(120% 70% at 20% 100%,color-mix(in srgb,var(--green) 55%,transparent),transparent 60%);animation:lsDrift1 30s ease-in-out infinite alternate;opacity:.45}
-#liveScene .ls-l2{background:radial-gradient(120% 65% at 80% 100%,color-mix(in srgb,var(--blue) 50%,transparent),transparent 60%);animation:lsDrift2 38s ease-in-out infinite alternate;opacity:.4}
-#liveScene .ls-l3{background:radial-gradient(140% 80% at 50% 110%,color-mix(in srgb,var(--gold) 35%,transparent),transparent 55%);animation:lsDrift3 46s ease-in-out infinite alternate;opacity:.3}
-/* Плавающие частицы (споры/искры/пузырьки) */
-#liveScene .ls-particles{position:absolute;inset:0;
-  background-image:
-    radial-gradient(2px 2px at 20% 30%,rgba(255,255,255,.5),transparent),
-    radial-gradient(2px 2px at 70% 60%,rgba(255,255,255,.4),transparent),
-    radial-gradient(1.5px 1.5px at 40% 80%,rgba(255,255,255,.45),transparent),
-    radial-gradient(1.5px 1.5px at 85% 25%,rgba(255,255,255,.35),transparent),
-    radial-gradient(2px 2px at 55% 45%,rgba(255,255,255,.4),transparent),
-    radial-gradient(1px 1px at 10% 65%,rgba(255,255,255,.5),transparent);
-  background-size:100% 100%;animation:lsFloat 22s linear infinite;opacity:.5}
-@keyframes lsDrift1{0%{transform:translate(0,0) scale(1)}100%{transform:translate(8vw,-4vh) scale(1.12)}}
-@keyframes lsDrift2{0%{transform:translate(0,0) scale(1.05)}100%{transform:translate(-9vw,-3vh) scale(.95)}}
-@keyframes lsDrift3{0%{transform:translate(0,0)}100%{transform:translate(5vw,-6vh) scale(1.1)}}
-@keyframes lsFloat{0%{transform:translateY(0)}100%{transform:translateY(-40px)}}
-/* Сцена «Море» (data-scene=sea): холоднее, волнообразнее */
-body.livescene-sea #liveScene .ls-l1{background:radial-gradient(130% 60% at 30% 100%,rgba(40,130,200,.55),transparent 60%)}
-body.livescene-sea #liveScene .ls-l2{background:radial-gradient(130% 55% at 75% 100%,rgba(30,170,180,.5),transparent 60%)}
-body.livescene-sea #liveScene .ls-l3{background:radial-gradient(150% 70% at 50% 110%,rgba(80,200,210,.32),transparent 55%)}
-/* Светлая тема — мягче, чтобы не перегружать */
-[data-theme="vk"] #liveScene{opacity:.5;filter:blur(3px)}
-[data-theme="vk"] #liveScene .ls-layer{opacity:.28}
-@media(prefers-reduced-motion:reduce){#liveScene .ls-layer,#liveScene .ls-particles{animation:none}}
-/* ── Динамический фон: дрейфующие размытые «пятна» в цветах темы ── */
+/* ── Динамический фон (GPU-LIGHT): мягкие цветные пятна.
+   Оптимизации против нагрузки на GPU:
+   • убран filter:blur(70px) — размытие фильтром пересчитывается каждый кадр
+     и стоит O(radius²) на пиксель; вместо него «мягкость» уже зашита в сам
+     radial-gradient (плавный спад до transparent), это статичная отрисовка;
+   • убран mix-blend-mode:screen — он заставляет браузер каждый кадр
+     композитить весь слой во внеэкранный буфер (самый тяжёлый пункт);
+   • анимируется только transform (translate3d) — это работа композитора
+     на GPU без перерисовки слоёв (paint);
+   • меньше пятен и медленнее анимация → меньше перерисовок. */
 #dynBg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;background:var(--bg0)}
 /* Переключатель в настройках */
 .settings-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:14px;cursor:pointer;width:100%}
@@ -261,20 +240,22 @@ body.livescene-sea #liveScene .ls-l3{background:radial-gradient(150% 70% at 50% 
 .settings-switch-track::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--text3);transition:transform .18s,background .18s}
 .settings-switch input:checked + .settings-switch-track{background:color-mix(in srgb,var(--gold) 30%,var(--bg4));border-color:color-mix(in srgb,var(--gold) 45%,transparent)}
 .settings-switch input:checked + .settings-switch-track::after{transform:translateX(20px);background:var(--gold)}
-#dynBg .dyn-blob{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55;will-change:transform;mix-blend-mode:screen}
-.dyn-blob.db1{width:46vw;height:46vw;background:radial-gradient(circle at 30% 30%,var(--gold),transparent 70%);top:-8vw;left:-6vw;animation:dynDrift1 26s ease-in-out infinite alternate}
-.dyn-blob.db2{width:40vw;height:40vw;background:radial-gradient(circle at 50% 50%,var(--blue),transparent 70%);bottom:-10vw;right:-6vw;animation:dynDrift2 32s ease-in-out infinite alternate}
-.dyn-blob.db3{width:34vw;height:34vw;background:radial-gradient(circle at 50% 50%,var(--green),transparent 70%);top:30%;left:40%;animation:dynDrift3 38s ease-in-out infinite alternate}
-.dyn-blob.db4{width:30vw;height:30vw;background:radial-gradient(circle at 50% 50%,var(--gold2),transparent 70%);top:-4vw;right:20%;animation:dynDrift4 30s ease-in-out infinite alternate}
-@keyframes dynDrift1{0%{transform:translate(0,0) scale(1)}100%{transform:translate(14vw,18vh) scale(1.18)}}
-@keyframes dynDrift2{0%{transform:translate(0,0) scale(1.1)}100%{transform:translate(-16vw,-12vh) scale(.92)}}
-@keyframes dynDrift3{0%{transform:translate(0,0) scale(1)}50%{transform:translate(-12vw,10vh) scale(1.2)}100%{transform:translate(10vw,-14vh) scale(.95)}}
-@keyframes dynDrift4{0%{transform:translate(0,0) scale(1)}100%{transform:translate(-10vw,16vh) scale(1.15)}}
-/* На светлой теме пятна мягче и без screen-блендинга (иначе выбеливает) */
-[data-theme="vk"] #dynBg .dyn-blob{opacity:.30;mix-blend-mode:normal;filter:blur(80px)}
+#dynBg .dyn-blob{position:absolute;border-radius:50%;opacity:.5;will-change:transform;transform:translateZ(0);backface-visibility:hidden}
+/* Мягкость зашита в градиент (спад до transparent на ~70%), без filter:blur. */
+.dyn-blob.db1{width:60vw;height:60vw;background:radial-gradient(circle at 50% 50%,color-mix(in srgb,var(--gold) 60%,transparent),transparent 70%);top:-14vw;left:-10vw;animation:dynDrift1 48s ease-in-out infinite alternate}
+.dyn-blob.db2{width:54vw;height:54vw;background:radial-gradient(circle at 50% 50%,color-mix(in srgb,var(--blue) 55%,transparent),transparent 70%);bottom:-16vw;right:-10vw;animation:dynDrift2 60s ease-in-out infinite alternate}
+.dyn-blob.db3{width:46vw;height:46vw;background:radial-gradient(circle at 50% 50%,color-mix(in srgb,var(--green) 45%,transparent),transparent 70%);top:24%;left:38%;animation:dynDrift3 72s ease-in-out infinite alternate}
+/* translate3d — анимация на композиторе (GPU), без paint/layout. */
+@keyframes dynDrift1{0%{transform:translate3d(0,0,0) scale(1)}100%{transform:translate3d(8vw,10vh,0) scale(1.08)}}
+@keyframes dynDrift2{0%{transform:translate3d(0,0,0) scale(1.05)}100%{transform:translate3d(-9vw,-7vh,0) scale(.96)}}
+@keyframes dynDrift3{0%{transform:translate3d(0,0,0) scale(1)}100%{transform:translate3d(6vw,-8vh,0) scale(1.1)}}
+/* 4-е пятно убрано для снижения числа крупных слоёв. */
+.dyn-blob.db4{display:none}
+/* Светлая тема — мягче. */
+[data-theme="vk"] #dynBg .dyn-blob{opacity:.28}
 /* Когда фон выключен пользователем — показываем обычный фон темы */
 body.dynbg-off #dynBg{display:none}
-/* Уважаем системную настройку «меньше движения» */
+/* Уважаем системную настройку «меньше движения» — статичные пятна без анимации */
 @media(prefers-reduced-motion:reduce){#dynBg .dyn-blob{animation:none}}
 /* ── Стеклянные несущие панели (когда динамический фон включён) ── */
 body:not(.dynbg-off) #chSidebar,
@@ -1762,9 +1743,11 @@ h1,h2,h3,.modal h2,.srv-title,.hdr-ch-name,.up-name{font-family:var(--font-headi
 .input-box{background:var(--glass-bg,color-mix(in srgb,var(--bg3) 55%,transparent));border:1px solid var(--glass-border,color-mix(in srgb,var(--border2) 70%,transparent));border-radius:var(--radius);display:flex;align-items:flex-end;gap:4px;padding:6px 8px;transition:border-color .15s,background .15s,box-shadow .15s;backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);box-shadow:0 8px 30px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.05)}
 /* По умолчанию (динам. фон выключен) остров НЕпрозрачный — лента под ним
    не просвечивает. Прозрачное «стекло» включается только вместе с фоном. */
-body.dynbg-off .input-box{background:var(--bg3);backdrop-filter:none;-webkit-backdrop-filter:none}
-[data-theme="truecolor"] body.dynbg-off .input-box{background:#1a2740}
-[data-theme="vk"] body.dynbg-off .input-box{background:#ffffff}
+/* Остров всегда «стеклянный», даже при выключенном динамическом фоне:
+   используем полупрозрачный фон темы + лёгкое размытие, без сплошной заливки. */
+body.dynbg-off .input-box{background:var(--glass-bg,color-mix(in srgb,var(--bg3) 72%,transparent));backdrop-filter:blur(14px) saturate(1.3);-webkit-backdrop-filter:blur(14px) saturate(1.3)}
+[data-theme="truecolor"] body.dynbg-off .input-box{background:rgba(26,39,64,.82)}
+[data-theme="vk"] body.dynbg-off .input-box{background:rgba(255,255,255,.92)}
 .input-box:focus-within{box-shadow:0 10px 36px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.07)}
 .input-box:focus-within{border-color:var(--gold3);}
 .msg-textarea{flex:1;background:transparent;border:none;color:var(--text);font-size:15px;resize:none;line-height:1.5;max-height:160px;outline:none;font-family:inherit;padding:2px 0;overflow-y:auto;-webkit-appearance:none;appearance:none}
@@ -2986,7 +2969,7 @@ html.tc-first-visit #firstVisitLoader{display:flex}
   }
 
   #mainHeader{padding:0 8px}.hdr-topic{display:none}
-  #inputOuter,#dmInputOuter{position:sticky!important;bottom:0;z-index:5;background:var(--bg2)!important}
+  #inputOuter,#dmInputOuter{position:sticky!important;bottom:0;z-index:5;background:transparent!important}
   #chView #messagesWrap{padding-bottom:0!important}
   .msg-img,.msg-video{max-width:calc(100vw - 90px)}
   #emojiPicker{width:calc(100vw - 16px);max-width:316px;left:8px!important}
@@ -8343,6 +8326,43 @@ textarea.fi { line-height:1.55 !important; }
   }
   #serverBar > *{position:relative;z-index:1}
 }
+/* ===== ПОЛЕ ВВОДА — «ОСТРОВ» НАД ЛЕНТОЙ =====
+   Обёртки #inputOuter / #dmInputOuter всегда полностью прозрачны во ВСЕХ
+   темах (discord, truecolor, vk и др.) и при любом состоянии эффектов:
+   убираем подложку (фон, рамку, тень, размытие, псевдо-слой), которую
+   раньше навешивали тематические правила. Видимым «стеклянным островом»
+   остаётся только .input-box. Высокая специфичность + html-префикс,
+   чтобы перебить любые тематические !important-правила. */
+html body #inputOuter,html body #dmInputOuter,
+html body.dynbg-off #inputOuter,html body.dynbg-off #dmInputOuter,
+html body[data-theme] #inputOuter,html body[data-theme] #dmInputOuter,
+html[data-theme] body #inputOuter,html[data-theme] body #dmInputOuter,
+html[data-theme] body.dynbg-off #inputOuter,html[data-theme] body.dynbg-off #dmInputOuter{
+  background:transparent!important;
+  background-image:none!important;
+  border:none!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+html body #inputOuter::before,html body #dmInputOuter::before,
+html[data-theme] body #inputOuter::before,html[data-theme] body #dmInputOuter::before{
+  display:none!important;content:none!important;
+}
+/* Полоска «печатает…» тоже без сплошного фона во всех темах/состояниях —
+   именно её непрозрачный фон создавал тёмную «подложку» над островом. */
+html body #typingBar,html body.dynbg-off #typingBar,
+html body[data-theme] #typingBar,html[data-theme] body #typingBar,
+html[data-theme] body.dynbg-off #typingBar{
+  background:transparent!important;background-image:none!important;
+}
+/* Пункты «Динамический фон» и «Живая анимация» показываем только в
+   обычном (десктопном) виде. В мобильном они скрыты, а эффекты там
+   принудительно выключены логикой инициализации. Порог 980px совпадает
+   с isMobileLike(). */
+@media(max-width:980px){
+  .settings-effects-only{display:none!important}
+}
 
 </style>
 </head>
@@ -8357,12 +8377,6 @@ textarea.fi { line-height:1.55 !important; }
 <div id="voiceGlow" aria-hidden="true">
   <span class="vglow vglow-top"></span>
   <span class="vglow vglow-bottom"></span>
-</div>
-<div id="liveScene" aria-hidden="true">
-  <span class="ls-layer ls-l1"></span>
-  <span class="ls-layer ls-l2"></span>
-  <span class="ls-layer ls-l3"></span>
-  <span class="ls-particles"></span>
 </div>
 <!-- FIRST VISIT LOADER -->
 <div id="firstVisitLoader" aria-live="polite" aria-label="Загрузка TrueCord">
@@ -8793,7 +8807,7 @@ textarea.fi { line-height:1.55 !important; }
     <div id="dmMsgWrap" style="flex:1;overflow-y:auto;overflow-x:hidden;padding:8px 0;-webkit-overflow-scrolling:touch">
       <div id="dmMsgList" style="display:flex;flex-direction:column"></div>
     </div>
-    <div id="dmInputOuter" style="flex-shrink:0;padding:0 12px 12px;padding-bottom:calc(12px + var(--safe-bottom,0px));background:var(--bg2)">
+    <div id="dmInputOuter" style="flex-shrink:0;padding:0 12px 12px;padding-bottom:calc(12px + var(--safe-bottom,0px));background:transparent">
       <div class="upload-progress-wrap" id="dmUploadProgressWrap"><div class="upload-progress-bar" id="dmUploadProgressBar"></div></div>
       <div id="dmPendingFilesWrap" class="pending-files-wrap"></div>
       <div class="input-box">
@@ -10334,11 +10348,12 @@ async function initApp(){
     // No saved choice → use the configured default theme (dark trueCORD / truecolor).
     setThemeLive(normalizeThemeChoice(APP_CFG.defaultTheme||'truecolor'));
   }
-  // Динамический фон: применяем сохранённый выбор (по умолчанию включён).
-  if(localStorage.getItem('tes3DynBg')==='0') document.body.classList.add('dynbg-off');
-  // Живая анимация (по умолчанию выключена).
-  if(localStorage.getItem('tes3LiveScene')==='1') document.body.classList.add('livescene-on');
-  if(localStorage.getItem('tes3LiveSceneType')==='sea') document.body.classList.add('livescene-sea');
+  // Эффекты (динамический фон) выключены по умолчанию.
+  // Включаются только если пользователь явно сохранил выбор ('1').
+  // В мобильном виде эффекты всегда выключены, независимо от сохранённого выбора.
+  // «Живая анимация» удалена как функция — слой никогда не включается.
+  const _effMobileOff = isMobileLike();
+  if(_effMobileOff || localStorage.getItem('tes3DynBg')!=='1') document.body.classList.add('dynbg-off');
   updateUserPanel();buildEmojiPicker();setupFormatToolbar();setupDragDrop();setupClipboardPaste();
   // iOS Safari (вкладка браузера) не имеет Notification — обращение к bare-идентификатору
   // выбрасывало ReferenceError и обрывало инициализацию (пустой бар, нет голоса, нет ленты).
@@ -16224,7 +16239,7 @@ function showMyProfile(){
             </select>
           </div>
 
-          <div class="fg">
+          <div class="fg settings-effects-only" data-desktop-only="1">
             <label class="settings-toggle-row" for="dynBgToggle">
               <span class="settings-toggle-copy">
                 <span class="settings-toggle-title">${tf('settings.dynBg','Динамический фон')}</span>
@@ -16235,23 +16250,6 @@ function showMyProfile(){
                 <span class="settings-switch-track"></span>
               </span>
             </label>
-          </div>
-
-          <div class="fg">
-            <label class="settings-toggle-row" for="liveSceneToggle">
-              <span class="settings-toggle-copy">
-                <span class="settings-toggle-title">${tf('settings.liveScene','Живая анимация')}</span>
-                <span class="settings-toggle-sub">${tf('settings.liveSceneHint','Анимированная сцена за стеклом (лес или море)')}</span>
-              </span>
-              <span class="settings-switch">
-                <input type="checkbox" id="liveSceneToggle" ${document.body.classList.contains('livescene-on')?'checked':''} onchange="toggleLiveScene(this.checked)">
-                <span class="settings-switch-track"></span>
-              </span>
-            </label>
-            <select class="fi" id="liveSceneSelect" style="margin-top:10px;${document.body.classList.contains('livescene-on')?'':'display:none'}" onchange="setLiveScene(this.value)">
-              <option value="forest" ${document.body.classList.contains('livescene-sea')?'':'selected'}>${tf('settings.sceneForest','Лес')}</option>
-              <option value="sea" ${document.body.classList.contains('livescene-sea')?'selected':''}>${tf('settings.sceneSea','Море')}</option>
-            </select>
           </div>
 
           <div class="fg">
