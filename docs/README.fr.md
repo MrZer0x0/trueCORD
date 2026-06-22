@@ -1,6 +1,5 @@
 <div align="center">
-
-# trueCORD
+<img src="preview.webp">
 
 **Une plateforme de chat auto-hébergée façon Discord, que vous pouvez vraiment faire tourner vous-même.**
 

@@ -1,6 +1,5 @@
 <div align="center">
-
-# trueCORD
+<img src="preview.webp">
 
 **A self-hosted, Discord-style chat platform you can actually run yourself.**
 

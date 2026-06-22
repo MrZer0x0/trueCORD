@@ -1,8 +1,5 @@
 <div align="center">
-
-# trueCORD
-<div align="center">
- <img src="preview.webp">
+<img src="preview.webp">
 
 **Self-hosted чат в стиле Discord, который реально можно поднять самому.**
 
