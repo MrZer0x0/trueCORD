@@ -5,11 +5,40 @@
 
 Серверы, текстовые каналы, личные сообщения, голосовые комнаты, звонки, реакции и обмен файлами — в одном привычном интерфейсе. Без сборки, без Node, без отдельного сервера БД, за которым нужно следить. Только PHP и один файл SQLite.
 
-[Русский](README.md) · [English](docs/README.en.md) · [Deutsch](docs/README.de.md) · [Français](docs/README.fr.md)
+[Русский](README.md) · [English](docs/README.en.md) · [Deutsch](docs/README.de.md) · [Français](docs/README.fr.md) · [简体中文](docs/README.zh.md)
 
 </div>
 
 ---
+
+## 🖼️ Обзор в слайдах
+
+🏠 **Свой Discord-чат на собственном хостинге** — серверы, каналы, личные сообщения, голос и демонстрация экрана в одном привычном интерфейсе. Только PHP + SQLite.
+
+<img src="docs/slides/ru/slide-1-hero.webp" alt="trueCORD" width="900">
+
+💬 **Чат, который уже знаком** — текстовые каналы, личные сообщения, эмодзи-реакции, превью ссылок и обмен файлами.
+
+<img src="docs/slides/ru/slide-2-chat.webp" alt="trueCORD" width="900">
+
+🎙️ **Общение в реальном времени** — голосовые каналы и звонки по WebRTC, живой список участников и подсветка говорящего.
+
+<img src="docs/slides/ru/slide-3-voice.webp" alt="trueCORD" width="900">
+
+🖥️ **Делитесь экраном** — транслируйте рабочий стол прямо в голосовой канал, смотрите вместе и выносите звонок в отдельное окно. Без плагинов.
+
+<img src="docs/slides/ru/slide-4-screenshare.webp" alt="trueCORD" width="900">
+
+⚙️ **Нужны лишь PHP + SQLite** — без Docker, без Node, без Postgres, без сборки. Тянет блог на WordPress — потянет и trueCORD.
+
+<img src="docs/slides/ru/slide-5-requirements.webp" alt="trueCORD" width="900">
+
+📱 **Запускается на любом устройстве с браузером** — одностраничное веб-приложение, ставится как PWA. Без App Store и Google Play.
+
+<img src="docs/slides/ru/slide-6-anydevice.webp" alt="trueCORD" width="900">
+
+---
+
 
 ## Зачем это 
 

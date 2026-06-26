@@ -5,11 +5,40 @@
 
 Servers, text channels, direct messages, voice rooms, calls, reactions and file sharing — in one familiar interface. No build step, no Node, no database server to babysit. Just PHP and a SQLite file.
 
-[Русский](../README.md) · [English](README.en.md) · [Deutsch](README.de.md) · [Français](README.fr.md)
+[Русский](../README.md) · [English](README.en.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [简体中文](README.zh.md)
 
 </div>
 
 ---
+
+## 🖼️ Slide overview
+
+🏠 **Your own Discord-style chat on your own hosting** — servers, channels, DMs, voice and screen sharing in one familiar interface. Just PHP + SQLite.
+
+<img src="slides/en/slide-1-hero.webp" alt="trueCORD" width="900">
+
+💬 **A chat that already feels familiar** — text channels, direct messages, emoji reactions, link previews and file sharing.
+
+<img src="slides/en/slide-2-chat.webp" alt="trueCORD" width="900">
+
+🎙️ **Real-time communication** — WebRTC voice channels and calls, a live participant list and active-speaker highlighting.
+
+<img src="slides/en/slide-3-voice.webp" alt="trueCORD" width="900">
+
+🖥️ **Share your screen** — stream your desktop straight into a voice channel, watch together and pop the call out into its own window. No plugins.
+
+<img src="slides/en/slide-4-screenshare.webp" alt="trueCORD" width="900">
+
+⚙️ **All you need is PHP + SQLite** — no Docker, no Node, no Postgres, no build step. If your host runs a WordPress blog, it runs trueCORD.
+
+<img src="slides/en/slide-5-requirements.webp" alt="trueCORD" width="900">
+
+📱 **Runs on any device with a browser** — a single-page web app, installable as a PWA. No App Store, no Google Play.
+
+<img src="slides/en/slide-6-anydevice.webp" alt="trueCORD" width="900">
+
+---
+
 
 ## Why this exists
 

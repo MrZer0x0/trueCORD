@@ -5,11 +5,40 @@
 
 Serveurs, canaux textuels, messages privés, salons vocaux, appels, réactions et partage de fichiers — dans une interface familière. Pas d'étape de build, pas de Node, pas de serveur de base de données à surveiller. Juste PHP et un fichier SQLite.
 
-[Русский](../README.md) · [English](README.en.md) · [Deutsch](README.de.md) · [Français](README.fr.md)
+[Русский](../README.md) · [English](README.en.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [简体中文](README.zh.md)
 
 </div>
 
 ---
+
+## 🖼️ Aperçu en diapositives
+
+🏠 **Votre propre chat façon Discord sur votre propre hébergement** — serveurs, canaux, messages privés, voix et partage d’écran dans une interface familière. Juste PHP + SQLite.
+
+<img src="slides/fr/slide-1-hero.webp" alt="trueCORD" width="900">
+
+💬 **Un chat qui vous est déjà familier** — canaux textuels, messages privés, réactions emoji, aperçus de liens et partage de fichiers.
+
+<img src="slides/fr/slide-2-chat.webp" alt="trueCORD" width="900">
+
+🎙️ **Communication en temps réel** — canaux vocaux et appels via WebRTC, liste des participants en direct et mise en avant de celui qui parle.
+
+<img src="slides/fr/slide-3-voice.webp" alt="trueCORD" width="900">
+
+🖥️ **Partagez votre écran** — diffusez votre bureau directement dans un canal vocal, regardez ensemble et détachez l’appel dans sa propre fenêtre. Sans plugins.
+
+<img src="slides/fr/slide-4-screenshare.webp" alt="trueCORD" width="900">
+
+⚙️ **Il suffit de PHP + SQLite** — pas de Docker, pas de Node, pas de Postgres, pas d’étape de build. Si votre hébergement fait tourner WordPress, il fait tourner trueCORD.
+
+<img src="slides/fr/slide-5-requirements.webp" alt="trueCORD" width="900">
+
+📱 **Fonctionne sur tout appareil doté d’un navigateur** — une application web monopage, installable en PWA. Pas d’App Store, pas de Google Play.
+
+<img src="slides/fr/slide-6-anydevice.webp" alt="trueCORD" width="900">
+
+---
+
 
 ## Pourquoi ce projet
 

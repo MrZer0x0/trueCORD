@@ -1,39 +1,106 @@
-name: PHP Composer
+name: 🧪 CI — Lint & Validate
 
 on:
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch: {}
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build:
-
+  php-lint:
+    name: 🐘 PHP ${{ matrix.php }} syntax
     runs-on: ubuntu-latest
-
+    strategy:
+      fail-fast: false
+      matrix:
+        php: [ "7.3", "8.1", "8.3" ]
     steps:
-    - uses: actions/checkout@v4
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
 
-    - name: Validate composer.json and composer.lock
-      run: composer validate --strict
+      - name: ⚙️ Setup PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo_sqlite, gd
+          coverage: none
+          tools: none
 
-    - name: Cache Composer packages
-      id: composer-cache
-      uses: actions/cache@v3
-      with:
-        path: vendor
-        key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-php-
+      - name: 🔍 Lint every PHP file
+        run: |
+          echo "::group::php -l"
+          status=0
+          while IFS= read -r -d '' file; do
+            if ! php -l "$file"; then status=1; fi
+          done < <(find . -type f -name '*.php' -print0)
+          echo "::endgroup::"
+          if [ "$status" -ne 0 ]; then
+            echo "::error::❌ One or more PHP files failed the syntax check"
+            exit 1
+          fi
+          echo "✅ All PHP files passed the syntax check"
 
-    - name: Install dependencies
-      run: composer install --prefer-dist --no-progress
+  json-validate:
+    name: 🧾 Validate JSON config
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
 
-    # Add a test script to composer.json, for instance: "test": "vendor/bin/phpunit"
-    # Docs: https://getcomposer.org/doc/articles/scripts.md
+      - name: 🧾 Check config & manifest JSON
+        run: |
+          status=0
+          for f in config.json config.example.json manifest.json; do
+            if [ -f "$f" ]; then
+              if jq empty "$f" >/dev/null 2>&1; then
+                echo "✅ $f is valid JSON"
+              else
+                echo "::error file=$f::❌ Invalid JSON in $f"
+                status=1
+              fi
+            fi
+          done
+          exit $status
 
-    # - name: Run test suite
-    #   run: composer run-script test
+  js-syntax:
+    name: 🟨 JS syntax (i18n & sw)
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node (lint only)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 🟨 Check JavaScript syntax
+        run: |
+          status=0
+          for f in i18n.js sw.js; do
+            if [ -f "$f" ]; then
+              if node --check "$f"; then
+                echo "✅ $f parses cleanly"
+              else
+                echo "::error file=$f::❌ Syntax error in $f"
+                status=1
+              fi
+            fi
+          done
+          exit $status
+
+  summary:
+    name: 🎉 All green
+    runs-on: ubuntu-latest
+    needs: [ php-lint, json-validate, js-syntax ]
+    steps:
+      - name: 🎉 Done
+        run: echo "✅ Lint, JSON and JS checks all passed — ready to ship 🚀"

@@ -43,7 +43,7 @@
   }catch(e){}
 })();
 </script>
-<script src="i18n.js?v=9"></script>
+<script src="i18n.js?v=10"></script>
 <link rel="apple-touch-icon" href="icon_tC_192.png">
 <link rel="manifest" href="manifest.php">
 <meta name="theme-color" content="<?= htmlspecialchars(STATUS_BAR_COLOR, ENT_QUOTES, 'UTF-8') ?>">
@@ -5791,14 +5791,35 @@ select.fi optgroup{
     overflow-y:hidden!important;
     padding:8px 10px calc(8px + var(--safe-bottom,0px))!important;
     border-right:0!important;
-    border-top:1px solid rgba(255,255,255,.08)!important;
+    border-top:0!important;
     z-index:160!important;
+    /* No background/blur on the scroll layer itself — it would scroll with the
+       icons and tear at the edges on over-scroll. The texture lives on the
+       fixed ::before below so it stays glued to the viewport. */
+    background:transparent!important;
+    box-shadow:none!important;
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+    scrollbar-width:none!important;
+    touch-action:pan-x!important;
+    -webkit-overflow-scrolling:touch!important;
+    overscroll-behavior-x:contain!important;
+  }
+  /* Fixed texture layer: pinned to the viewport, never scrolls with content. */
+  #serverBar::before{
+    content:""!important;
+    position:fixed!important;
+    left:0!important;
+    right:0!important;
+    bottom:0!important;
+    height:var(--mobile-serverbar-h)!important;
+    z-index:-1!important;
+    pointer-events:none!important;
     background:rgba(10,16,28,.96)!important;
+    border-top:1px solid rgba(255,255,255,.08)!important;
     box-shadow:0 -10px 30px rgba(0,0,0,.35)!important;
     backdrop-filter:blur(18px) saturate(140%)!important;
     -webkit-backdrop-filter:blur(18px) saturate(140%)!important;
-    scrollbar-width:none!important;
-    touch-action:pan-x!important;
   }
   #serverBar::-webkit-scrollbar{display:none!important;}
 
@@ -5990,8 +6011,29 @@ select.fi optgroup{
     padding:8px 10px calc(8px + var(--safe-bottom,0px))!important;
     z-index:160!important;
     border-right:0!important;
+    border-top:0!important;
+    /* Texture moved to the fixed ::before so it never scrolls with the icons. */
+    background:transparent!important;
+    box-shadow:none!important;
+    overscroll-behavior-x:contain!important;
+    -webkit-overflow-scrolling:touch!important;
+  }
+  /* Fixed texture layer for the truecolor theme, pinned to the viewport. */
+  [data-theme="truecolor"] #serverBar::before{
+    content:""!important;
+    position:fixed!important;
+    left:0!important;
+    right:0!important;
+    bottom:0!important;
+    top:auto!important;
+    inset:auto!important;
+    height:calc(74px + var(--safe-bottom,0px))!important;
+    z-index:-1!important;
+    pointer-events:none!important;
+    background:linear-gradient(180deg,rgba(18,27,43,.94) 0%,rgba(11,17,29,.98) 100%)!important;
     border-top:1px solid rgba(255,255,255,.08)!important;
     box-shadow:0 -10px 30px rgba(0,0,0,.35)!important;
+    opacity:1!important;
   }
 
   [data-theme="truecolor"] #srvIcons{
@@ -8484,6 +8526,7 @@ html[data-theme] body.dynbg-off #typingBar{
         <option value="ru">Русский</option>
         <option value="de">Deutsch</option>
         <option value="fr">Français</option>
+        <option value="zh">简体中文</option>
       </select>
     </div>
   </div>
@@ -16260,6 +16303,7 @@ function showMyProfile(){
               <option value="ru" ${curLang==='ru'?'selected':''}>Русский</option>
               <option value="de" ${curLang==='de'?'selected':''}>Deutsch</option>
               <option value="fr" ${curLang==='fr'?'selected':''}>Français</option>
+              <option value="zh" ${curLang==='zh'?'selected':''}>简体中文</option>
             </select>
           </div>
 
