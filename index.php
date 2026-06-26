@@ -43,7 +43,7 @@
   }catch(e){}
 })();
 </script>
-<script src="i18n.js?v=10"></script>
+<script src="i18n.js?v=11"></script>
 <link rel="apple-touch-icon" href="icon_tC_192.png">
 <link rel="manifest" href="manifest.php">
 <meta name="theme-color" content="<?= htmlspecialchars(STATUS_BAR_COLOR, ENT_QUOTES, 'UTF-8') ?>">
@@ -163,7 +163,7 @@ body{
 [data-theme="truecolor"] .toast.ok{border-left:3px solid #43b581!important}
 [data-theme="truecolor"] .toast.err{border-left:3px solid #ff5f62!important}
 [data-theme="truecolor"] .toast.info{border-left:3px solid #2d7dff!important}
-[data-theme="truecolor"] #serverBar{background:linear-gradient(180deg,#0d1522 0%,#0b111d 100%)!important;border-right:1px solid rgba(255,255,255,.06)!important}
+[data-theme="truecolor"] #serverBar{background:#151f31!important;border-right:1px solid rgba(255,255,255,.06)!important}
 [data-theme="truecolor"] #chSidebar{background:rgba(15,22,35,.98)!important;border-right:1px solid rgba(255,255,255,.06)!important}
 [data-theme="truecolor"] #mainArea,[data-theme="truecolor"] #memberSidebar{background:linear-gradient(180deg,#121b2b 0%,#101827 100%)!important}
 [data-theme="truecolor"] #sidebarHeader,[data-theme="truecolor"] #mainHeader,[data-theme="truecolor"] #inputOuter,[data-theme="truecolor"] #dmInputOuter{background:rgba(16,24,39,.88)!important;border-color:rgba(255,255,255,.06)!important;backdrop-filter:blur(18px)!important}
@@ -251,10 +251,134 @@ body.vglow-local #voiceGlow .vglow-bottom{opacity:.3;animation:vglowPulse 2.6s e
 @keyframes dynDrift3{0%{transform:translate3d(0,0,0) scale(1)}100%{transform:translate3d(6vw,-8vh,0) scale(1.1)}}
 /* 4-е пятно убрано для снижения числа крупных слоёв. */
 .dyn-blob.db4{display:none}
+
+/* Настройка «Северное сияние» видна только в тёмной теме truecolor */
+.settings-aurora-only{display:none}
+[data-theme="truecolor"] .settings-aurora-only{display:block}
+
+/* ══ Северное сияние (Aurora Borealis) — только тёмная тема truecolor ══
+   Несколько вертикальных световых «занавесей» с зелёно-бирюзово-фиолетовыми
+   переливами, мягко колышущихся над лентой сообщений. Скрыто по умолчанию,
+   включается только при [data-theme="truecolor"]. Анимация — на GPU
+   (transform/opacity), без paint/layout. */
+.aurora{position:absolute;inset:0;overflow:hidden;pointer-events:none;display:none;
+  /* лёгкое смешивание со слоями под ним для свечения */
+  mix-blend-mode:screen}
+[data-theme="truecolor"] .aurora{display:block}
+
+.aurora-band{
+  position:absolute;
+  top:-30%;
+  height:150%;
+  width:60vw;
+  filter:blur(34px) saturate(1.3);
+  opacity:.7;
+  will-change:transform,opacity;
+  transform:translateZ(0);
+  backface-visibility:hidden;
+  border-radius:50%;
+  mix-blend-mode:screen;
+}
+/* Лента 1 — зелёно-бирюзовая, слева */
+.aurora-band.ab1{
+  left:-8vw;
+  background:linear-gradient(95deg,
+    transparent 0%,
+    rgba(46,230,170,.0) 12%,
+    rgba(46,230,170,.32) 34%,
+    rgba(60,200,255,.40) 52%,
+    rgba(120,120,255,.22) 72%,
+    transparent 92%);
+  animation:auroraSway1 22s ease-in-out infinite alternate,
+            auroraGlow 9s ease-in-out infinite;
+}
+/* Лента 2 — бирюзово-фиолетовая, по центру, выше и тоньше */
+.aurora-band.ab2{
+  left:24vw;
+  width:48vw;
+  top:-36%;
+  height:150%;
+  background:linear-gradient(88deg,
+    transparent 0%,
+    rgba(70,255,210,.26) 28%,
+    rgba(90,160,255,.34) 50%,
+    rgba(160,110,255,.30) 70%,
+    transparent 94%);
+  animation:auroraSway2 28s ease-in-out infinite alternate,
+            auroraGlow 11s ease-in-out infinite 1.5s;
+}
+/* Лента 3 — холодная фиолетово-розовая, справа */
+.aurora-band.ab3{
+  right:-10vw;
+  width:54vw;
+  background:linear-gradient(92deg,
+    transparent 0%,
+    rgba(120,255,200,.20) 24%,
+    rgba(110,140,255,.30) 48%,
+    rgba(190,120,255,.28) 68%,
+    rgba(255,120,200,.16) 84%,
+    transparent 96%);
+  animation:auroraSway3 34s ease-in-out infinite alternate,
+            auroraGlow 13s ease-in-out infinite 3s;
+}
+/* Звёзды — едва заметная мерцающая крошка для атмосферы */
+.aurora-stars{
+  position:absolute;inset:0;
+  background-image:
+    radial-gradient(1px 1px at 20% 18%,rgba(255,255,255,.55),transparent),
+    radial-gradient(1px 1px at 67% 12%,rgba(255,255,255,.40),transparent),
+    radial-gradient(1px 1px at 43% 28%,rgba(255,255,255,.30),transparent),
+    radial-gradient(1px 1px at 82% 22%,rgba(255,255,255,.45),transparent),
+    radial-gradient(1px 1px at 12% 34%,rgba(255,255,255,.25),transparent),
+    radial-gradient(1px 1px at 90% 38%,rgba(255,255,255,.30),transparent),
+    radial-gradient(1px 1px at 55% 8%,rgba(255,255,255,.50),transparent);
+  opacity:.5;
+  animation:auroraTwinkle 6s ease-in-out infinite;
+}
+/* Покачивание лент: наклон + смещение + лёгкое масштабирование по вертикали */
+@keyframes auroraSway1{
+  0%{transform:translate3d(0,0,0) rotate(-4deg) scaleY(1)}
+  50%{transform:translate3d(4vw,2vh,0) rotate(2deg) scaleY(1.08)}
+  100%{transform:translate3d(-3vw,-1vh,0) rotate(-2deg) scaleY(.96)}
+}
+@keyframes auroraSway2{
+  0%{transform:translate3d(0,0,0) rotate(3deg) scaleY(1.04)}
+  50%{transform:translate3d(-5vw,1vh,0) rotate(-3deg) scaleY(.94)}
+  100%{transform:translate3d(3vw,3vh,0) rotate(4deg) scaleY(1.1)}
+}
+@keyframes auroraSway3{
+  0%{transform:translate3d(0,0,0) rotate(-2deg) scaleY(1)}
+  50%{transform:translate3d(3vw,-2vh,0) rotate(3deg) scaleY(1.06)}
+  100%{transform:translate3d(-4vw,2vh,0) rotate(-3deg) scaleY(.98)}
+}
+/* Пульсация яркости — «дыхание» сияния */
+@keyframes auroraGlow{
+  0%,100%{opacity:.5}
+  50%{opacity:.78}
+}
+@keyframes auroraTwinkle{
+  0%,100%{opacity:.35}
+  50%{opacity:.6}
+}
+/* Уважаем «меньше движения» — сияние остаётся, но статично */
+@media(prefers-reduced-motion:reduce){
+  .aurora-band,.aurora-stars{animation:none!important}
+}
+/* Если пользователь выключил динамический фон — сияния нет */
+body.dynbg-off .aurora{display:none!important}
+/* Пользователь может отключить только сияние, оставив blob-фон */
+body.aurora-off .aurora{display:none!important}
+
 /* Светлая тема — мягче. */
 [data-theme="vk"] #dynBg .dyn-blob{opacity:.28}
+/* Тёмная тема: blob чуть тише, чтобы северное сияние было ведущим эффектом. */
+[data-theme="truecolor"] #dynBg .dyn-blob{opacity:.34}
 /* Когда фон выключен пользователем — показываем обычный фон темы */
 body.dynbg-off #dynBg{display:none}
+/* …но если активно северное сияние, слой #dynBg нужен для него —
+   показываем контейнер, а сами blob-пятна гасим (раз фон выключен). */
+body.dynbg-off.aurora-on #dynBg{display:block}
+body.dynbg-off.aurora-on #dynBg .dyn-blob{display:none}
 /* Уважаем системную настройку «меньше движения» — статичные пятна без анимации */
 @media(prefers-reduced-motion:reduce){#dynBg .dyn-blob{animation:none}}
 /* ── Стеклянные несущие панели (когда динамический фон включён) ── */
@@ -276,6 +400,17 @@ body:not(.dynbg-off) #serverBar{border-right:1px solid var(--glass-border)!impor
 body:not(.dynbg-off) #mainArea{background:color-mix(in srgb,var(--glass-panel) 60%,transparent)!important}
 /* Сообщения/лента не размываем (текст должен быть резким), фон уже даёт глубину */
 body:not(.dynbg-off) #messagesWrap{background:transparent!important}
+/* ── Северное сияние без динамического фона ──
+   Если blob-фон выключен, но сияние включено — делаем ленту и её
+   панель полупрозрачными, чтобы сполохи просвечивали за сообщениями.
+   Текст остаётся резким (лента не размывается). */
+body.dynbg-off.aurora-on #mainArea{
+  background:color-mix(in srgb,var(--bg1) 78%,transparent)!important;
+  backdrop-filter:blur(20px) saturate(1.2)!important;
+  -webkit-backdrop-filter:blur(20px) saturate(1.2)!important;
+}
+body.dynbg-off.aurora-on #messagesWrap{background:transparent!important}
+body.dynbg-off.aurora-on #chView{background:transparent!important}
 /* ── Плавающий «остров» поля ввода ──────────────────────────────
    Поле ввода всегда парит над лентой (для всех тем), а сообщения
    уезжают под него. Раньше это работало только при включённом
@@ -429,7 +564,7 @@ h1,h2,h3,.modal h2,.srv-title,.hdr-ch-name,.up-name{font-family:var(--font-headi
 [data-theme="vk"] .login-tab{color:#818c99!important}
 [data-theme="vk"] .login-tab.active{border-color:#0077ff!important;color:#000!important}
 [data-theme="vk"] .terms-scroll{background:#f5f7fa!important;border:1px solid #dce1e6!important;color:#626d7a!important}
-[data-theme="vk"] #serverBar{background:#fff!important;border-right:1px solid #dce1e6!important;border-top-color:#dce1e6!important}
+[data-theme="vk"] #serverBar{background:#edeef0!important;border-right:1px solid #dce1e6!important;border-top-color:#dce1e6!important}
 [data-theme="vk"] #chSidebar,[data-theme="vk"] #memberSidebar,[data-theme="vk"] #mainArea{background:#edeef0!important;color:#000!important}
 [data-theme="vk"] #sidebarHeader,[data-theme="vk"] #mainHeader,[data-theme="vk"] #inputOuter,[data-theme="vk"] #dmInputOuter{background:#fff!important;border-color:#dce1e6!important;color:#000!important}
 [data-theme="vk"] .ch-item,[data-theme="vk"] .dm-item,[data-theme="vk"] .mb-item{color:#626d7a!important}
@@ -491,7 +626,7 @@ h1,h2,h3,.modal h2,.srv-title,.hdr-ch-name,.up-name{font-family:var(--font-headi
 /* SERVER BAR */
 #serverBar{
   width:var(--srv-w);min-width:var(--srv-w);
-  background:var(--bg0);
+  background:var(--bg2);
   display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:4px;
   overflow-y:auto;overflow-x:visible;
   border-right:1px solid var(--border);
@@ -5805,7 +5940,8 @@ select.fi optgroup{
     -webkit-overflow-scrolling:touch!important;
     overscroll-behavior-x:contain!important;
   }
-  /* Fixed texture layer: pinned to the viewport, never scrolls with content. */
+  /* Fixed texture layer: pinned to the viewport, never scrolls with content.
+     Цвет — как у ленты чата (--bg2), для единообразия во всех темах. */
   #serverBar::before{
     content:""!important;
     position:fixed!important;
@@ -5815,11 +5951,9 @@ select.fi optgroup{
     height:var(--mobile-serverbar-h)!important;
     z-index:-1!important;
     pointer-events:none!important;
-    background:rgba(10,16,28,.96)!important;
-    border-top:1px solid rgba(255,255,255,.08)!important;
-    box-shadow:0 -10px 30px rgba(0,0,0,.35)!important;
-    backdrop-filter:blur(18px) saturate(140%)!important;
-    -webkit-backdrop-filter:blur(18px) saturate(140%)!important;
+    background:var(--bg2)!important;
+    border-top:1px solid var(--border)!important;
+    box-shadow:0 -10px 30px rgba(0,0,0,.18)!important;
   }
   #serverBar::-webkit-scrollbar{display:none!important;}
 
@@ -6030,9 +6164,9 @@ select.fi optgroup{
     height:calc(74px + var(--safe-bottom,0px))!important;
     z-index:-1!important;
     pointer-events:none!important;
-    background:linear-gradient(180deg,rgba(18,27,43,.94) 0%,rgba(11,17,29,.98) 100%)!important;
-    border-top:1px solid rgba(255,255,255,.08)!important;
-    box-shadow:0 -10px 30px rgba(0,0,0,.35)!important;
+    background:#151f31!important;
+    border-top:1px solid rgba(255,255,255,.06)!important;
+    box-shadow:0 -10px 30px rgba(0,0,0,.22)!important;
     opacity:1!important;
   }
 
@@ -8415,6 +8549,13 @@ html[data-theme] body.dynbg-off #typingBar{
   <span class="dyn-blob db2"></span>
   <span class="dyn-blob db3"></span>
   <span class="dyn-blob db4"></span>
+  <!-- Северное сияние (только тёмная тема truecolor) -->
+  <div class="aurora" aria-hidden="true">
+    <span class="aurora-band ab1"></span>
+    <span class="aurora-band ab2"></span>
+    <span class="aurora-band ab3"></span>
+    <span class="aurora-stars"></span>
+  </div>
 </div>
 <div id="voiceGlow" aria-hidden="true">
   <span class="vglow vglow-top"></span>
@@ -10397,6 +10538,14 @@ async function initApp(){
   // «Живая анимация» удалена как функция — слой никогда не включается.
   const _effMobileOff = isMobileLike();
   if(_effMobileOff || localStorage.getItem('tes3DynBg')!=='1') document.body.classList.add('dynbg-off');
+  // Северное сияние включено по умолчанию; выключаем только при явном выборе '0'.
+  if(localStorage.getItem('tes3Aurora')==='0') document.body.classList.add('aurora-off');
+  // Активируем слой сияния, если тема тёмная и сияние не отключено (не зависим от порядка функций).
+  (function(){
+    var dark=document.body.getAttribute('data-theme')==='truecolor'||document.documentElement.getAttribute('data-theme')==='truecolor';
+    var off=document.body.classList.contains('aurora-off');
+    document.body.classList.toggle('aurora-on',dark&&!off);
+  })();
   updateUserPanel();buildEmojiPicker();setupFormatToolbar();setupDragDrop();setupClipboardPaste();
   // iOS Safari (вкладка браузера) не имеет Notification — обращение к bare-идентификатору
   // выбрасывало ReferenceError и обрывало инициализацию (пустой бар, нет голоса, нет ленты).
@@ -16295,6 +16444,19 @@ function showMyProfile(){
             </label>
           </div>
 
+          <div class="fg settings-effects-only settings-aurora-only" data-desktop-only="1">
+            <label class="settings-toggle-row" for="auroraToggle">
+              <span class="settings-toggle-copy">
+                <span class="settings-toggle-title">${tf('settings.aurora','Северное сияние')}</span>
+                <span class="settings-toggle-sub">${tf('settings.auroraHint','Переливы зелёного и фиолетового за лентой сообщений (тёмная тема)')}</span>
+              </span>
+              <span class="settings-switch">
+                <input type="checkbox" id="auroraToggle" ${document.body.classList.contains('aurora-off')?'':'checked'} onchange="toggleAurora(this.checked)">
+                <span class="settings-switch-track"></span>
+              </span>
+            </label>
+          </div>
+
           <div class="fg">
             <label class="fl" data-i18n="lang.language">Язык</label>
             <select class="fi" data-lang-selector onchange="setLangLive(this.value)">
@@ -16461,6 +16623,19 @@ window.toggleDynBg=function(on){
   document.body.classList.toggle('dynbg-off',!on);
   localStorage.setItem('tes3DynBg',on?'1':'0');
 };
+window.toggleAurora=function(on){
+  document.body.classList.toggle('aurora-off',!on);
+  localStorage.setItem('tes3Aurora',on?'1':'0');
+  if(window.refreshAuroraState) window.refreshAuroraState();
+};
+// Класс body.aurora-on активен, когда тема тёмная (truecolor) и сияние не выключено.
+// От него зависит показ слоя сияния и прозрачность ленты — независимо от blob-фона.
+window.refreshAuroraState=function(){
+  var dark = document.body.getAttribute('data-theme')==='truecolor'
+          || document.documentElement.getAttribute('data-theme')==='truecolor';
+  var off = document.body.classList.contains('aurora-off');
+  document.body.classList.toggle('aurora-on', dark && !off);
+};
 window.toggleLiveScene=function(on){
   document.body.classList.toggle('livescene-on',!!on);
   localStorage.setItem('tes3LiveScene',on?'1':'0');
@@ -16531,6 +16706,7 @@ window.setThemeLive=function(v){
   }
   setTimeout(broadcastMiniAppTheme,0);
   try{ syncStatusBarColor(); }catch(e){}
+  try{ if(window.refreshAuroraState) window.refreshAuroraState(); }catch(e){}
 };
 // Красим системный статус-бар (Android Chrome / PWA) в цвет фона текущей темы.
 // theme-color раньше был статичным (синий) и не менялся под тему — теперь читаем реальный --bg0.
