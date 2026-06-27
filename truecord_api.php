@@ -464,6 +464,80 @@ try {
         return '';
     }
 
+    // ── YouTube search helpers ──
+    // GET для доверенных доменов google/youtube (JSON или HTML, до 3 МБ).
+    function tc_httpGet(string $url): string {
+        $host = parse_url($url, PHP_URL_HOST) ?: '';
+        $ok = false;
+        foreach (['googleapis.com','youtube.com','www.youtube.com','i.ytimg.com'] as $allowed) {
+            if ($host === $allowed || str_ends_with($host, '.' . $allowed) || $host === $allowed) { $ok = true; break; }
+        }
+        // допускаем googleapis.com и youtube.com c www
+        if (!preg_match('/(^|\.)(googleapis\.com|youtube\.com)$/', $host)) $ok = false; else $ok = true;
+        if (!$ok) return '';
+        if (function_exists('curl_init')) {
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_MAXREDIRS      => 3,
+                CURLOPT_CONNECTTIMEOUT => 4,
+                CURLOPT_TIMEOUT        => 8,
+                CURLOPT_USERAGENT      => 'Mozilla/5.0 (compatible; trueCORD/1.0)',
+                CURLOPT_SSL_VERIFYPEER => true,
+                CURLOPT_SSL_VERIFYHOST => 2,
+                CURLOPT_HTTPHEADER     => ['Accept-Language: ru,en;q=0.8'],
+            ]);
+            $out = curl_exec($ch);
+            curl_close($ch);
+            return is_string($out) ? substr($out, 0, 3145728) : '';
+        }
+        $ctx = stream_context_create(['http'=>[
+            'method'=>'GET','timeout'=>8,
+            'header'=>"User-Agent: Mozilla/5.0 (compatible; trueCORD/1.0)\r\nAccept-Language: ru,en;q=0.8\r\n"
+        ]]);
+        $out = @file_get_contents($url, false, $ctx, 0, 3145728);
+        return is_string($out) ? $out : '';
+    }
+
+    // Декод JSON-escape последовательностей (\uXXXX, \n и т.п.) в строке.
+    function tc_jsonUnescape(string $s): string {
+        $d = json_decode('"' . str_replace('"', '\\"', $s) . '"');
+        return is_string($d) ? $d : $s;
+    }
+
+    // Рекурсивно достаёт videoRenderer-карточки из ytInitialData.
+    function tc_ytExtract(array $data): array {
+        $out = [];
+        $walk = function ($node) use (&$walk, &$out) {
+            if (!is_array($node)) return;
+            if (isset($node['videoRenderer']) && is_array($node['videoRenderer'])) {
+                $vr  = $node['videoRenderer'];
+                $vid = (string)($vr['videoId'] ?? '');
+                if ($vid !== '' && count($out) < 24) {
+                    $title  = '';
+                    if (isset($vr['title']['runs'][0]['text'])) $title = (string)$vr['title']['runs'][0]['text'];
+                    elseif (isset($vr['title']['simpleText'])) $title = (string)$vr['title']['simpleText'];
+                    $author = '';
+                    if (isset($vr['ownerText']['runs'][0]['text'])) $author = (string)$vr['ownerText']['runs'][0]['text'];
+                    elseif (isset($vr['longBylineText']['runs'][0]['text'])) $author = (string)$vr['longBylineText']['runs'][0]['text'];
+                    $dur = '';
+                    if (isset($vr['lengthText']['simpleText'])) $dur = (string)$vr['lengthText']['simpleText'];
+                    $out[$vid] = [
+                        'id'        => $vid,
+                        'title'     => $title,
+                        'author'    => $author,
+                        'duration'  => $dur,
+                        'thumbnail' => "https://i.ytimg.com/vi/{$vid}/mqdefault.jpg",
+                    ];
+                }
+            }
+            foreach ($node as $v) if (is_array($v)) $walk($v);
+        };
+        $walk($data);
+        return array_values($out);
+    }
+
     function lpTitle(string $html): string {
         if (preg_match('/<title[^>]*>(.*?)<\/title>/isu', $html, $m)) {
             return trim(html_entity_decode(strip_tags($m[1]), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));

@@ -2,7 +2,7 @@
 // v2: HTML/JS всегда из сети (чтобы переводы и разметка обновлялись сразу),
 // в кэш кладём только статичные ассеты (иконки). Это убирает баг с "застывшими"
 // сырыми ключами i18n из-за устаревшего кэша index.php / i18n.js.
-const CACHE_NAME = 'truecord-v34';
+const CACHE_NAME = 'truecord-v46';
 const STATIC_ASSETS = [
   './icon_tC_main.png',
 ];

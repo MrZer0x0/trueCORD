@@ -123,7 +123,7 @@ if (!isset($db) || !isset($d)) { return; }
     if ($action === 'watch_signal') {
         $rid = (int)($d['roomId'] ?? 0); $type = (string)($d['type'] ?? ''); $data = (string)($d['data'] ?? '');
         if (!$rid || !$type) apiFail('Неверные параметры');
-        if (!in_array($type, ['watch-open','watch-close','watch-play','watch-pause','watch-seek','watch-state','watch-request-state'], true)) apiFail('Неверный тип');
+        if (!in_array($type, ['watch-open','watch-close','watch-play','watch-pause','watch-seek','watch-state','watch-request-state','watch-emoji','watch-chat'], true)) apiFail('Неверный тип');
         if (mb_strlen($data) > 4000) apiFail('Слишком большие данные');
         $now = nowSec();
         // Получатели — все активные участники комнаты, кроме меня.

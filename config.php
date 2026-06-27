@@ -198,6 +198,10 @@ tc_define('DEFAULT_CHANNEL_ICON', (string)tc_cfg_get($tcCfg, 'project.default_ch
 
 tc_define('OWNER_NAME', (string)tc_cfg_get($tcCfg, 'owner.super_admin_name', 'Admin'));
 
+// Ключ YouTube Data API v3 (необязательно). Если задан — поиск идёт через
+// официальный API; если пуст — сервер парсит выдачу YouTube (без ключа).
+tc_define('YOUTUBE_API_KEY', (string)tc_cfg_get($tcCfg, 'integrations.youtube_api_key', ''));
+
 tc_define('REGISTRATION_OPEN', (bool)tc_cfg_get($tcCfg, 'registration.open', true));
 tc_define('REQUIRE_VALIDATION', $tcRequireValidation);
 tc_define('AUTO_VALIDATE', $tcAutoValidate);

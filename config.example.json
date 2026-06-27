@@ -22,6 +22,9 @@
   "owner": {
     "super_admin_name": "Admin"
   },
+  "integrations": {
+    "youtube_api_key": ""
+  },
   "registration": {
     "open": true,
     "mode": "discord",

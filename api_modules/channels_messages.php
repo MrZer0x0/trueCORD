@@ -153,6 +153,50 @@ if (!isset($db) || !isset($d)) { return; }
         apiOk(['messages' => buildMsgBatch($db, $rows, $meId), 'hasMore' => $hasMore]);
     }
 
+    // ══ search_messages ══════════════════════════════════════════
+    // Поиск по содержимому (text) и/или автору (user_name) в пределах канала.
+    // Параметры: channelId, query (строка), by ('all'|'text'|'author'), limit.
+    if ($action === 'search_messages') {
+        $chId  = (int)($d['channelId'] ?? 1);
+        $query = trim((string)($d['query'] ?? ''));
+        $by    = (string)($d['by'] ?? 'all');
+        if (!in_array($by, ['all','text','author'], true)) $by = 'all';
+        $limit = min(100, max(1, (int)($d['limit'] ?? 50)));
+        if (mb_strlen($query) < 1) apiFail('Введите запрос для поиска');
+        if (mb_strlen($query) > 200) apiFail('Слишком длинный запрос');
+
+        // Проверка доступа к каналу (как в messages)
+        $q = $db->prepare("SELECT server_id,owner_id,perm_read FROM channels WHERE id=?");
+        $q->execute([$chId]); $ch = $q->fetch();
+        if (!$ch) apiFail('Канал не найден');
+        $myRole = getRole($db, (int)$ch['server_id'], $meId);
+        $pr     = (string)($ch['perm_read'] ?? 'all');
+        if ($pr === 'admins' && !isAdmin($myRole) && (int)$ch['owner_id'] !== $meId) apiFail('Нет доступа');
+
+        // Экранируем спецсимволы LIKE, ищем регистронезависимо подстроку
+        $esc  = str_replace(['\\','%','_'], ['\\\\','\\%','\\_'], $query);
+        $like = '%' . $esc . '%';
+
+        if ($by === 'text') {
+            $sql = "SELECT * FROM messages WHERE channel_id=? AND deleted=0 AND type='msg'
+                    AND text LIKE ? ESCAPE '\\' ORDER BY id DESC LIMIT ?";
+            $params = [$chId, $like, $limit];
+        } elseif ($by === 'author') {
+            $sql = "SELECT * FROM messages WHERE channel_id=? AND deleted=0 AND type='msg'
+                    AND user_name LIKE ? ESCAPE '\\' ORDER BY id DESC LIMIT ?";
+            $params = [$chId, $like, $limit];
+        } else {
+            $sql = "SELECT * FROM messages WHERE channel_id=? AND deleted=0 AND type='msg'
+                    AND (text LIKE ? ESCAPE '\\' OR user_name LIKE ? ESCAPE '\\')
+                    ORDER BY id DESC LIMIT ?";
+            $params = [$chId, $like, $like, $limit];
+        }
+        $s = $db->prepare($sql); $s->execute($params);
+        $rows = $s->fetchAll();
+        apiOk(['messages' => buildMsgBatch($db, $rows, $meId), 'query' => $query, 'by' => $by, 'count' => count($rows)]);
+    }
+
+
     // ══ send ═════════════════════════════════════════════════════
     if ($action === 'send') {
         $chId  = (int)($d['channelId'] ?? 1); $text = trim((string)($d['text'] ?? '')); $image = trim((string)($d['image'] ?? '')); $rpTo = !empty($d['replyTo']) ? (int)$d['replyTo'] : null;
@@ -275,3 +319,66 @@ if (!isset($db) || !isset($d)) { return; }
     }
 
     // ══ set_typing ═══════════════════════════════════════════════
+
+    // ══ youtube_search ═══════════════════════════════════════════
+    // Поиск видео на YouTube. С ключом (config: integrations.youtube_api_key)
+    // — через официальный Data API; без ключа — парсит выдачу YouTube.
+    if ($action === 'youtube_search') {
+        $query = trim((string)($d['query'] ?? ''));
+        if ($query === '') apiFail('Введите поисковый запрос');
+        if (mb_strlen($query) > 150) apiFail('Слишком длинный запрос');
+        tc_rateLimit($db, 'yt_search', $meId, 20, 30); // не чаще 20 за 30 сек
+
+        $key = defined('YOUTUBE_API_KEY') ? YOUTUBE_API_KEY : '';
+        $results = [];
+
+        if ($key !== '') {
+            // ── официальный YouTube Data API v3 ──
+            $url = 'https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=18'
+                 . '&q=' . rawurlencode($query) . '&key=' . rawurlencode($key);
+            $raw = tc_httpGet($url);
+            $j   = json_decode((string)$raw, true);
+            if (is_array($j) && !empty($j['items'])) {
+                foreach ($j['items'] as $it) {
+                    $vid = $it['id']['videoId'] ?? '';
+                    if (!$vid) continue;
+                    $sn = $it['snippet'] ?? [];
+                    $results[] = [
+                        'id'        => $vid,
+                        'title'     => (string)($sn['title'] ?? ''),
+                        'author'    => (string)($sn['channelTitle'] ?? ''),
+                        'thumbnail' => "https://i.ytimg.com/vi/{$vid}/mqdefault.jpg",
+                    ];
+                }
+            } elseif (is_array($j) && !empty($j['error'])) {
+                apiFail('YouTube API: ' . (string)($j['error']['message'] ?? 'ошибка'));
+            }
+        } else {
+            // ── без ключа: парсим страницу результатов ──
+            $url = 'https://www.youtube.com/results?search_query=' . rawurlencode($query) . '&hl=ru';
+            $html = tc_httpGet($url);
+            if ($html && preg_match('/var ytInitialData = (\{.*?\});<\/script>/s', $html, $m)) {
+                $data = json_decode($m[1], true);
+                if (is_array($data)) {
+                    $results = tc_ytExtract($data);
+                }
+            }
+            // запасной грубый парс, если структура не нашлась
+            if (!$results && $html && preg_match_all('/"videoRenderer":\{"videoId":"([\w-]{11})".*?"text":"([^"]+)"/s', $html, $mm, PREG_SET_ORDER)) {
+                $seen = [];
+                foreach ($mm as $one) {
+                    $vid = $one[1];
+                    if (isset($seen[$vid])) continue; $seen[$vid] = 1;
+                    $results[] = [
+                        'id'        => $vid,
+                        'title'     => tc_jsonUnescape($one[2]),
+                        'author'    => '',
+                        'thumbnail' => "https://i.ytimg.com/vi/{$vid}/mqdefault.jpg",
+                    ];
+                    if (count($results) >= 18) break;
+                }
+            }
+        }
+
+        apiOk(['results' => array_slice($results, 0, 18), 'query' => $query, 'keyed' => ($key !== '')]);
+    }

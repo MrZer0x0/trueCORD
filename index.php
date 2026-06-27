@@ -43,7 +43,7 @@
   }catch(e){}
 })();
 </script>
-<script src="i18n.js?v=11"></script>
+<script src="i18n.js?v=22"></script>
 <link rel="apple-touch-icon" href="icon_tC_192.png">
 <link rel="manifest" href="manifest.php">
 <meta name="theme-color" content="<?= htmlspecialchars(STATUS_BAR_COLOR, ENT_QUOTES, 'UTF-8') ?>">
@@ -856,7 +856,7 @@ h1,h2,h3,.modal h2,.srv-title,.hdr-ch-name,.up-name{font-family:var(--font-headi
 .vs-btn.danger{background:rgba(237,66,69,.14);border-color:rgba(237,66,69,.28);color:#ff7779}
 .vs-btn.danger:hover{background:#ed4245;color:#fff;border-color:#ed4245}
 .vs-btn.active{background:rgba(78,145,96,.16);border-color:rgba(78,145,96,.36);color:var(--green)}
-.voice-stage-body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:14px;padding:14px;overflow:hidden}
+.voice-stage-body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:14px;padding:14px;overflow:hidden;position:relative}
 .voice-stage-main{min-width:0;min-height:0;display:flex;flex-direction:column;gap:14px;overflow-y:auto;overflow-x:hidden;padding-right:2px;scrollbar-gutter:stable}
 
 .voice-stage-grid-wrap{min-width:0;display:flex;flex-direction:column;gap:10px;flex:0 0 auto;order:2}
@@ -927,13 +927,136 @@ h1,h2,h3,.modal h2,.srv-title,.hdr-ch-name,.up-name{font-family:var(--font-headi
 .voice-stage-stream{order:1;flex:1 1 300px;min-height:240px;max-height:min(52vh,480px);border-radius:18px;background:radial-gradient(circle at 50% 0%,rgba(88,101,242,.18),transparent 42%),#050608;border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 16px 44px rgba(0,0,0,.28);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
 .voice-stage-stream video{width:100%;height:100%;object-fit:contain;background:#000;display:block}
 /* Совместный просмотр */
-.watch-player-wrap{position:absolute;inset:0;display:flex;flex-direction:column;background:#000;z-index:4}
-#watchPlayerHost{flex:1;min-height:0;position:relative}
-#watchPlayerHost iframe,#watchPlayerHost #watchYtTarget{position:absolute;inset:0;width:100%!important;height:100%!important;border:0}
-.watch-bar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;background:var(--glass-panel,rgba(12,20,34,.86));backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);border-top:1px solid var(--glass-border,rgba(255,255,255,.08))}
+/* Модалка поиска YouTube */
+.watch-search-row{display:flex;gap:8px;margin-bottom:12px}
+.watch-search-results{max-height:46vh;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:6px;margin:0 -4px;padding:0 4px}
+.watch-search-loading,.watch-search-empty{padding:22px 8px;text-align:center;color:var(--text3);font-size:13px}
+.watch-yt-item{display:flex;gap:10px;padding:6px;border-radius:10px;cursor:pointer;transition:background .12s;align-items:center}
+.watch-yt-item:hover{background:var(--bg3)}
+.watch-yt-thumb{position:relative;width:124px;min-width:124px;height:70px;border-radius:8px;overflow:hidden;background:var(--bg0);flex-shrink:0}
+.watch-yt-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.watch-yt-dur{position:absolute;right:4px;bottom:4px;background:rgba(0,0,0,.82);color:#fff;font-size:11px;font-weight:600;padding:1px 5px;border-radius:4px;line-height:1.4}
+.watch-yt-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.8);width:36px;height:36px;border-radius:50%;background:rgba(214,40,40,.92);color:#fff;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .14s,transform .14s;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.watch-yt-play svg{margin-left:2px}
+.watch-yt-item:hover .watch-yt-play{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.watch-yt-meta{flex:1;min-width:0}
+.watch-yt-title{font-size:14px;font-weight:600;color:var(--text);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.watch-yt-author{font-size:12px;color:var(--text3);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:640px){.watch-yt-thumb{width:96px;min-width:96px;height:56px}}
+
+.watch-player-wrap{position:absolute;inset:0;display:none;flex-direction:column;background:#000;z-index:4;border-radius:16px;overflow:hidden}
+.watch-player-wrap.shown{display:flex}
+/* Область видео занимает всё доступное место над баром */
+#watchPlayerHost{flex:1 1 auto;min-height:0;position:relative;width:100%;background:#000;overflow:hidden}
+#watchPlayerHost #watchYtTarget{position:absolute;inset:0;width:100%;height:100%}
+/* iframe полностью заполняет область; YouTube сам делает letterbox внутри */
+#watchPlayerHost iframe{position:absolute;inset:0;width:100%!important;height:100%!important;border:0;display:block}
+/* Трансляция экрана недоступна на телефоне — прячем кнопки запуска в мобильном виде */
+body.is-mobile-view #vsStreamBtn,
+body.is-mobile-view #vbStreamBtn,
+body.is-mobile-view .vs-tile-icon-btn{display:none!important}
+/* Плавающее окно совместного просмотра */
+.watch-float-window{position:fixed;right:20px;bottom:90px;width:420px;max-width:calc(100vw - 32px);height:262px;z-index:1200;display:none;flex-direction:column;border-radius:14px;overflow:hidden;background:#000;border:1px solid var(--glass-border,rgba(255,255,255,.10));box-shadow:0 20px 60px rgba(0,0,0,.55)}
+.watch-float-head{display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:move;flex-shrink:0;background:rgba(10,16,28,.55);border-bottom:1px solid rgba(255,255,255,.08);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4)}
+.watch-float-dot{width:8px;height:8px;border-radius:50%;background:var(--red2);flex-shrink:0;animation:svLivePulse 1s ease-in-out infinite}
+.watch-float-title{flex:1;font-size:12px;font-weight:600;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.watch-float-actions{display:flex;gap:6px;flex-shrink:0}
+.watch-float-body{flex:1;position:relative;min-height:0;background:#000}
+.watch-float-body .watch-player-wrap{position:absolute;inset:0}
+@media(max-width:640px){.watch-float-window{right:8px;left:8px;width:auto;bottom:80px;height:210px}}
+/* В полноэкранном режиме растягиваем плеер на весь экран */
+.watch-player-wrap:fullscreen,.watch-player-wrap:-webkit-full-screen{width:100vw;height:100vh;border-radius:0}
+.watch-player-wrap:fullscreen #watchPlayerHost,.watch-player-wrap:-webkit-full-screen #watchPlayerHost{min-height:0;flex:1}
+.watch-bar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;margin:0;background:var(--glass-panel,rgba(12,20,34,.86));backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);border-top:1px solid var(--glass-border,rgba(255,255,255,.08));transition:opacity .3s,transform .3s}
+/* Автоскрытие панели управления при бездействии */
+.watch-player-wrap.bar-hidden .watch-bar{opacity:0;transform:translateY(8px);pointer-events:none}
+.watch-player-wrap.bar-hidden{cursor:none}
+/* Громкость: кнопка в баре + выпадающий поповер с ползунком */
+.watch-vol{position:relative;display:flex;align-items:center;margin-left:auto;margin-right:10px}
+.watch-vol-btn{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);cursor:pointer;flex-shrink:0;transition:color .12s,background .12s,border-color .12s}
+.watch-vol-btn:hover{color:var(--text);background:var(--bg4);border-color:var(--gold)}
+.watch-vol-ic{display:flex;width:17px;height:17px}
+.watch-vol-ic svg{width:17px;height:17px}
+/* Поповер появляется чуть ниже кнопки звука */
+.watch-vol-pop{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);display:none;align-items:center;gap:8px;padding:8px 12px;border-radius:12px;background:var(--bg2);border:1px solid var(--border2);box-shadow:0 -8px 30px rgba(0,0,0,.4);z-index:30;white-space:nowrap}
+.watch-vol-pop.open{display:flex}
+.watch-vol-pop::before{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--bg2)}
+.watch-vol-mute{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;border:none;background:transparent;color:var(--text2);cursor:pointer;flex-shrink:0}
+.watch-vol-mute:hover{color:var(--text);background:var(--bg4)}
+.watch-vol-mute-ic{display:flex;width:15px;height:15px}
+.watch-vol-mute-ic svg{width:15px;height:15px}
+.watch-vol-range{-webkit-appearance:none;appearance:none;width:120px;height:5px;border-radius:3px;background:linear-gradient(to right,var(--gold) 0%,var(--gold) var(--vol,80%),var(--bg5) var(--vol,80%),var(--bg5) 100%);outline:none;cursor:pointer}
+.watch-vol-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid var(--gold);box-shadow:0 1px 5px rgba(0,0,0,.4);cursor:pointer}
+.watch-vol-range::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid var(--gold);box-shadow:0 1px 5px rgba(0,0,0,.4);cursor:pointer}
 .watch-live{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:var(--text)}
 .watch-dot{width:8px;height:8px;border-radius:50%;background:#ed4245;box-shadow:0 0 0 4px rgba(237,66,69,.18);animation:streamDotPulse 1.4s ease-in-out infinite}
-.watch-bar-actions{display:flex;gap:8px}
+.watch-bar-actions{display:flex;gap:10px;align-items:center;flex-shrink:0}
+/* ── Реакции-эмоции ── */
+.watch-emoji-bar{position:absolute;bottom:64px;left:50%;transform:translateX(-50%) translateY(10px);display:flex;gap:6px;padding:8px 12px;border-radius:999px;background:var(--bg2);border:1px solid var(--border2);box-shadow:0 10px 30px rgba(0,0,0,.45);z-index:20;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+.watch-emoji-bar.open{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
+.watch-emoji-pick{background:none;border:none;font-size:24px;cursor:pointer;padding:2px 4px;border-radius:8px;transition:transform .12s,background .12s;line-height:1}
+.watch-emoji-pick:hover{transform:scale(1.3);background:var(--bg4)}
+.watch-emoji-fly{position:absolute;bottom:70px;font-size:34px;pointer-events:none;z-index:21;animation:watchEmojiFly 2.5s ease-out forwards;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))}
+@keyframes watchEmojiFly{0%{transform:translateY(0) scale(.6);opacity:0}15%{transform:translateY(-10px) scale(1.1);opacity:1}100%{transform:translateY(-220px) scale(1);opacity:0}}
+/* Эмодзи, отлетающий от плитки участника в сетке (обычный голосовой) */
+.watch-emoji-fly.tile-fly{z-index:1500;animation:tileEmojiFly 2.5s ease-out forwards}
+@keyframes tileEmojiFly{
+  0%{transform:translate(0,0) scale(.5);opacity:0}
+  12%{transform:translate(0,-12px) scale(1.15);opacity:1}
+  40%{transform:translate(-10px,-70px) scale(1)}
+  70%{transform:translate(8px,-130px) scale(1)}
+  100%{transform:translate(-4px,-190px) scale(.9);opacity:0}
+}
+.watch-chat-toggle.has-unread{position:relative}
+.watch-chat-toggle.has-unread::after{content:"";position:absolute;top:-2px;right:-2px;width:9px;height:9px;border-radius:50%;background:var(--red2);border:2px solid var(--bg2)}
+/* ── Чат трансляции: встроенная колонка справа внутри окна ── */
+.watch-chat{
+  display:none;flex-direction:column;
+  width:320px;min-width:0;flex-shrink:0;
+  background:var(--bg2);
+  border-left:1px solid var(--border);
+  overflow:hidden;
+}
+/* При открытом чате окно делится: видео+бар слева, чат справа */
+.watch-player-wrap.shown.chat-open{display:grid;grid-template-columns:minmax(0,1fr) 320px;grid-template-rows:1fr auto}
+.watch-player-wrap.chat-open #watchPlayerHost{grid-column:1;grid-row:1}
+.watch-player-wrap.chat-open .watch-bar{grid-column:1;grid-row:2}
+.watch-player-wrap.chat-open .watch-chat{display:flex;grid-column:2;grid-row:1 / span 2}
+.watch-chat-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border);font-weight:700;font-size:14px;color:var(--text);flex-shrink:0}
+.watch-chat-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:.12s}
+.watch-chat-close:hover{background:var(--bg3);color:var(--text)}
+.watch-chat-list{flex:1;overflow-y:auto;padding:12px 12px 6px;display:flex;flex-direction:column;gap:10px;min-height:0}
+.watch-chat-list::-webkit-scrollbar{width:6px}
+.watch-chat-list::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:3px}
+.watch-chat-empty{margin:auto;color:var(--text3);font-size:12px;text-align:center;padding:20px;opacity:.8}
+.watch-chat-msg{display:flex;flex-direction:column;gap:2px;font-size:13px;max-width:100%}
+.watch-chat-msg.mine{align-items:flex-end}
+.watch-chat-name{font-weight:700;font-size:11px;color:var(--gold);padding:0 4px}
+.watch-chat-msg.mine .watch-chat-name{color:var(--text3)}
+.watch-chat-text{color:var(--text);word-break:break-word;background:var(--bg3);padding:7px 11px;border-radius:14px;border-top-left-radius:4px;max-width:90%;line-height:1.35}
+.watch-chat-msg.mine .watch-chat-text{background:var(--gold);color:#fff;border-radius:14px;border-top-right-radius:4px}
+/* Островок ввода — отделённый закруглённый блок */
+.watch-chat-input-row{display:flex;gap:8px;align-items:center;margin:10px;padding:6px 6px 6px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:24px;flex-shrink:0;box-shadow:0 4px 14px rgba(0,0,0,.15);transition:border-color .15s,box-shadow .15s}
+.watch-chat-input-row:focus-within{border-color:var(--gold);box-shadow:0 4px 18px color-mix(in srgb,var(--gold) 30%,transparent)}
+.watch-chat-inp{flex:1;min-width:0;background:transparent;border:none;padding:6px 0;color:var(--text);font-size:14px;outline:none}
+.watch-chat-inp::placeholder{color:var(--text3)}
+.watch-chat-send{flex-shrink:0;width:36px;height:36px;border:none;background:var(--gold);color:#fff;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .12s,filter .12s}
+.watch-chat-send:hover{filter:brightness(1.12);transform:scale(1.05)}
+.watch-chat-send svg{width:16px;height:16px}
+/* На мобильном чат становится нижней панелью (видео сверху, чат снизу) */
+@media(max-width:760px){
+  .watch-player-wrap.shown.chat-open{grid-template-columns:1fr;grid-template-rows:auto auto 1fr}
+  .watch-player-wrap.chat-open #watchPlayerHost{grid-column:1;grid-row:1;aspect-ratio:16/9;min-height:0}
+  .watch-player-wrap.chat-open .watch-bar{grid-column:1;grid-row:2}
+  .watch-player-wrap.chat-open .watch-chat{grid-column:1;grid-row:3;width:auto;border-left:none;border-top:1px solid var(--border);min-height:180px}
+}
+/* Бар всегда в одну строку: название слева, кнопка звука и действия справа */
+@media(max-width:640px){
+  .watch-bar{padding:10px 12px}
+  .watch-bar .watch-live .watch-live-label{font-size:13px}
+  .watch-vol-range{width:104px}
+  .watch-vol-pop{padding:8px 10px}
+}
 .vs-empty-stream{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;color:var(--text3);padding:24px;max-width:440px}
 .vs-empty-stream .big{width:66px;height:66px;border-radius:22px;display:flex;align-items:center;justify-content:center;background:rgba(88,101,242,.12);border:1px solid rgba(88,101,242,.22);color:#a5b4fc}
 .vs-empty-stream b{color:var(--text);font-size:17px}
@@ -941,13 +1064,80 @@ h1,h2,h3,.modal h2,.srv-title,.hdr-ch-name,.up-name{font-family:var(--font-headi
 .vs-watch-pill{position:absolute;left:14px;top:14px;right:14px;max-width:calc(100% - 28px);z-index:4;display:none;align-items:center;gap:7px;padding:7px 10px;border-radius:999px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:12px;font-weight:800;backdrop-filter:blur(12px)}
 .vs-watch-pill #voiceStageWatchName{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .vs-watch-actions{margin-left:auto;display:flex;align-items:center;gap:6px;flex-shrink:0}
-.vs-watch-btn{width:26px;height:26px;border-radius:50%;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.10);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:background .12s,transform .12s}
+.vs-watch-btn{width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.08);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:background .12s,transform .12s,border-color .12s;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.vs-watch-btn:hover{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.24)}
+/* Кнопки внутри панели watch-бара и плавающего окна — адаптивны к теме
+   (на светлой теме белые на белом были не видны). */
+.watch-bar .vs-watch-btn,.watch-float-actions .vs-watch-btn{
+  width:34px;height:34px;background:var(--bg3);border:1px solid var(--border2);color:var(--text2);backdrop-filter:none;-webkit-backdrop-filter:none
+}
+.watch-bar .vs-watch-btn:hover,.watch-float-actions .vs-watch-btn:hover{background:var(--bg4);border-color:var(--gold);color:var(--text)}
+.watch-bar .vs-watch-btn svg,.watch-float-actions .vs-watch-btn svg{width:16px;height:16px}
 .vs-watch-btn:hover{background:rgba(255,255,255,.18);transform:scale(1.04)}
 .vs-watch-btn svg{width:14px;height:14px;display:block}
 .voice-stage-stream.watching .vs-watch-pill{display:flex}
 .vs-live-dot{width:8px;height:8px;border-radius:50%;background:#ed4245;animation:streamDotPulse 1.4s ease-in-out infinite;flex-shrink:0}
 .voice-stage-controls{order:3;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:10px;border-radius:16px;background:var(--bg2);border:1px solid var(--border);position:sticky;bottom:0;z-index:3;box-shadow:0 -6px 18px rgba(0,0,0,.10)}
+/* Кнопки управления под трансляцией — единая ширина, ровный ряд */
+.voice-stage-controls .vs-btn{flex:1 1 0;min-width:130px;max-width:190px;height:40px}
 .voice-stage-side{min-width:0;min-height:0;border-radius:18px;background:var(--bg2);border:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column}
+/* Иконочная кнопка шапки (без текстовой подписи) */
+.vs-btn.icon-only{padding:0;width:40px;height:40px;justify-content:center;flex:0 0 auto;min-width:40px;max-width:40px}
+.vs-btn.icon-only .lbl{display:none}
+/* Кнопки чат+эмоции поверх области трансляции экрана (не watch) */
+.vs-stream-overlay{position:absolute;top:12px;right:12px;display:none;gap:8px;z-index:8}
+#voiceStage.has-stream:not(.watch-on) .vs-stream-overlay{display:flex}
+.vs-stream-overlay .vs-watch-btn{width:38px;height:38px;background:rgba(10,16,28,.6);border:1px solid rgba(255,255,255,.14);color:#fff;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.vs-stream-overlay .vs-watch-btn:hover{background:rgba(20,30,48,.8);border-color:rgba(255,255,255,.26)}
+/* Вкладки боковой панели (Участники / Чат) */
+.voice-stage-side-tabs{display:flex;flex-shrink:0;border-bottom:1px solid var(--border)}
+.vss-tab{flex:1;padding:11px 8px;background:none;border:none;color:var(--text3);font-size:13px;font-weight:700;cursor:pointer;transition:color .12s,background .12s;position:relative}
+.vss-tab:hover{color:var(--text2);background:var(--bg3)}
+.vss-tab.active{color:var(--gold)}
+.vss-tab.active::after{content:"";position:absolute;left:12px;right:12px;bottom:0;height:2px;background:var(--gold);border-radius:2px}
+.voice-stage-side-pane{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+/* Чат голосового канала */
+.vc-chat-pane{padding:0}
+.vc-chat-list{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;min-height:0}
+.vc-chat-list::-webkit-scrollbar{width:6px}
+.vc-chat-list::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:3px}
+.vc-chat-empty{margin:auto;color:var(--text3);font-size:12px;text-align:center;padding:20px;opacity:.85}
+.vc-chat-msg{display:flex;flex-direction:column;gap:2px;font-size:13px;max-width:100%}
+.vc-chat-msg.mine{align-items:flex-end}
+.vc-chat-name{font-weight:700;font-size:11px;color:var(--gold);padding:0 4px}
+.vc-chat-msg.mine .vc-chat-name{color:var(--text3)}
+.vc-chat-text{color:var(--text);word-break:break-word;background:var(--bg3);padding:7px 11px;border-radius:14px;border-top-left-radius:4px;max-width:90%;line-height:1.35}
+.vc-chat-msg.mine .vc-chat-text{background:var(--gold);color:#fff;border-radius:14px;border-top-right-radius:4px}
+/* Островок ввода чата канала */
+.vc-chat-input-row{display:flex;gap:8px;align-items:center;margin:10px;padding:6px 6px 6px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:24px;flex-shrink:0;box-shadow:0 4px 14px rgba(0,0,0,.12);transition:border-color .15s,box-shadow .15s}
+.vc-chat-input-row:focus-within{border-color:var(--gold);box-shadow:0 4px 18px color-mix(in srgb,var(--gold) 28%,transparent)}
+.vc-chat-inp{flex:1;min-width:0;background:transparent;border:none;padding:6px 0;color:var(--text);font-size:14px;outline:none}
+.vc-chat-inp::placeholder{color:var(--text3)}
+.vc-chat-send{flex-shrink:0;width:36px;height:36px;border:none;background:var(--gold);color:#fff;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .12s,filter .12s}
+.vc-chat-send:hover{filter:brightness(1.12);transform:scale(1.05)}
+/* Кнопки в шапке с непрочитанным */
+#voiceMembersBtn.has-unread::after{content:"";position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--red2)}
+#voiceMembersBtn{position:relative}
+.voice-emoji-bar{bottom:auto;top:74px}
+/* ════ Логика стейджа голосового канала ════
+   • Боковая панель «Участники» скрыта по умолчанию, выезжает по кнопке (.side-open)
+   • Без трансляции/просмотра: показываем сетку, прячем поле трансляции
+   • При трансляции/просмотре (.has-stream): прячем сетку, поле занимает всё
+*/
+/* Боковая панель скрыта по умолчанию, body в одну колонку */
+.voice-stage-body{grid-template-columns:minmax(0,1fr)}
+#voiceStage.side-open .voice-stage-body{grid-template-columns:minmax(0,1fr) 300px}
+.voice-stage-side{display:none}
+#voiceStage.side-open .voice-stage-side{display:flex}
+/* Без активной трансляции/просмотра — поле трансляции скрыто, сетка видна */
+#voiceStage:not(.has-stream) .voice-stage-stream{display:none}
+#voiceStage:not(.has-stream) .voice-stage-grid-wrap{display:flex}
+/* При трансляции/просмотре — сетка скрыта, стрим занимает всё поле */
+#voiceStage.has-stream .voice-stage-grid-wrap{display:none!important}
+#voiceStage.has-stream .voice-stage-stream{display:flex!important;flex:1 1 auto;min-height:0;max-height:none}
+#voiceStage.has-stream .voice-stage-main{overflow:hidden}
+/* Кнопка «Участники» подсвечена когда панель открыта */
+#voiceMembersBtn.active{background:var(--gold);color:#fff;border-color:var(--gold)}
 .voice-stage-side-head{padding:12px 12px 8px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;align-items:center;color:var(--text2);font-size:13px;font-weight:800}
 .voice-stage-users{padding:8px;overflow-y:auto;min-height:0;display:flex;flex-direction:column;gap:7px}
 .vs-user{display:flex;align-items:center;gap:9px;padding:8px;border-radius:12px;background:var(--bg3);border:1px solid transparent;color:var(--text2);transition:background .12s,border-color .12s,color .12s}
@@ -1313,7 +1503,9 @@ h1,h2,h3,.modal h2,.srv-title,.hdr-ch-name,.up-name{font-family:var(--font-headi
 #streamViewer:fullscreen{width:100%!important;height:100%!important;border-radius:0;resize:none}
 .sv-header{
   display:flex;align-items:center;gap:8px;padding:6px 10px;
-  background:var(--bg1);border-bottom:1px solid var(--border);
+  background:rgba(10,16,28,.55);
+  border-bottom:1px solid rgba(255,255,255,.08);
+  backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);
   cursor:move;flex-shrink:0;
 }
 .sv-live-dot{
@@ -1326,11 +1518,14 @@ h1,h2,h3,.modal h2,.srv-title,.hdr-ch-name,.up-name{font-family:var(--font-headi
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .sv-btn{
-  width:26px;height:26px;border-radius:4px;background:none;border:none;
-  color:var(--text3);cursor:pointer;font-size:13px;
-  display:flex;align-items:center;justify-content:center;transition:.12s;
+  width:28px;height:28px;border-radius:50%;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.10);
+  color:var(--text2);cursor:pointer;font-size:13px;
+  display:flex;align-items:center;justify-content:center;transition:.14s;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
 }
-.sv-btn:hover{background:var(--bg3);color:var(--text)}
+.sv-btn:hover{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.20)}
 .sv-video-wrap{
   flex:1;background:#000;display:flex;align-items:center;
   justify-content:center;min-height:180px;position:relative;overflow:hidden;
@@ -1572,6 +1767,37 @@ h1,h2,h3,.modal h2,.srv-title,.hdr-ch-name,.up-name{font-family:var(--font-headi
 /* MESSAGES */
 #messagesWrap{flex:1;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;padding:8px 0;-webkit-overflow-scrolling:touch}
 #messagesList{display:flex;flex-direction:column}
+/* ── Поиск по сообщениям ── */
+#msgSearchPanel{flex-shrink:0;display:flex;flex-direction:column;border-bottom:1px solid var(--border);background:var(--bg2);max-height:60%;min-height:0}
+.msg-search-row{display:flex;align-items:center;gap:8px;padding:10px 12px;flex-shrink:0}
+.msg-search-ic{display:flex;align-items:center;justify-content:center;color:var(--text3);flex-shrink:0;width:18px;height:18px}
+.msg-search-ic svg{width:18px;height:18px}
+.msg-search-inp{flex:1;min-width:0;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;color:var(--text);font-size:14px;outline:none;transition:border-color .15s}
+.msg-search-inp:focus{border-color:var(--gold)}
+.msg-search-modes{display:flex;gap:2px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:2px;flex-shrink:0}
+.msg-search-mode{padding:6px 10px;border:none;background:transparent;color:var(--text3);font-size:12px;font-weight:600;border-radius:calc(var(--radius-sm) - 2px);cursor:pointer;transition:background .12s,color .12s;white-space:nowrap}
+.msg-search-mode:hover{color:var(--text2)}
+.msg-search-mode.active{background:var(--gold);color:#fff}
+.msg-search-close{flex-shrink:0}
+.msg-search-results{flex:1;overflow-y:auto;overflow-x:hidden;padding:0 8px 8px;min-height:0}
+.msg-search-empty{padding:24px 16px;text-align:center;color:var(--text3);font-size:13px}
+.msg-search-hint{padding:18px 16px;text-align:center;color:var(--text3);font-size:13px;opacity:.8}
+.msg-search-count{padding:8px 12px 6px;color:var(--text3);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.msr-item{display:flex;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);cursor:pointer;transition:background .12s}
+.msr-item:hover{background:var(--bg3)}
+.msr-avatar{width:36px;height:36px;border-radius:50%;flex-shrink:0;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--text2);font-size:15px;overflow:hidden}
+.msr-avatar img{width:100%;height:100%;object-fit:cover}
+.msr-body{flex:1;min-width:0}
+.msr-head{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}
+.msr-name{font-weight:700;font-size:14px;color:var(--gold);flex-shrink:0}
+.msr-time{font-size:11px;color:var(--text3);flex-shrink:0}
+.msr-text{font-size:13px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
+.msr-text mark{background:color-mix(in srgb,var(--gold) 40%,transparent);color:var(--text);border-radius:3px;padding:0 1px}
+.msr-img-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text3);margin-top:3px}
+.msr-img-badge svg{width:12px;height:12px}
+/* Вспышка подсветки при переходе к сообщению из поиска */
+.msg-jump-flash{animation:msgJumpFlash 1.6s ease-out}
+@keyframes msgJumpFlash{0%{background:color-mix(in srgb,var(--gold) 30%,transparent)}100%{background:transparent}}
 .load-more-btn{display:flex;align-items:center;justify-content:center;padding:8px;margin:4px 16px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);cursor:pointer;font-size:13px;color:var(--text3);transition:background .12s,color .12s;gap:6px}
 .load-more-btn:hover{background:var(--bg4);color:var(--text2)}.load-more-btn.loading{opacity:.6;pointer-events:none}
 .msg-day-div{display:flex;align-items:center;gap:8px;padding:8px 16px;color:var(--text3);font-size:12px}
@@ -8540,6 +8766,26 @@ html[data-theme] body.dynbg-off #typingBar{
   .settings-effects-only{display:none!important}
 }
 
+/* ════ ФИНАЛЬНЫЕ переопределения логики стейджа (после всех media-правил) ════ */
+/* При трансляции или совместном просмотре сетка участников полностью скрыта,
+   стрим/плеер занимает всё поле. Перебивает прежние правила-ленты. */
+#voiceStage.has-stream .voice-stage-grid-wrap,
+#voiceStage.has-stream .voice-stage-grid,
+#voiceStage.has-stream .voice-stage-grid-head{display:none!important}
+#voiceStage.has-stream .voice-stage-stream{display:flex!important;flex:1 1 auto!important;min-height:240px!important;max-height:none!important;order:1!important}
+/* Без трансляции — поле трансляции скрыто, сетка видна */
+#voiceStage:not(.has-stream) .voice-stage-stream{display:none!important}
+#voiceStage:not(.has-stream) .voice-stage-grid-wrap{display:flex!important}
+/* Боковая панель «Участники»: скрыта, открывается по кнопке */
+.voice-stage-body{grid-template-columns:minmax(0,1fr)!important}
+.voice-stage-side{display:none!important}
+#voiceStage.side-open .voice-stage-body{grid-template-columns:minmax(0,1fr) 300px!important}
+#voiceStage.side-open .voice-stage-side{display:flex!important}
+@media(max-width:980px){
+  /* На мобильном панель участников выезжает оверлеем поверх, а не сжимает стрим */
+  #voiceStage.side-open .voice-stage-body{grid-template-columns:1fr!important}
+  #voiceStage.side-open .voice-stage-side{position:absolute;inset:0;z-index:40;border-radius:0;max-height:none}
+}
 </style>
 </head>
 <body data-theme="<?= htmlspecialchars(DEFAULT_THEME, ENT_QUOTES, 'UTF-8') ?>">
@@ -8893,6 +9139,7 @@ html[data-theme] body.dynbg-off #typingBar{
       <button class="icon-btn" id="hdrDmVideoReturnBtn" onclick="showDmVideoWindow()" title="Открыть окно видеозвонка" data-ti="expand" style="display:none"></button>
       <button class="icon-btn" id="hdrDmPrivacyBtn" onclick="showDmPrivacyForCurrent()" title="Приватность ЛС и звонков" data-ti="gear" style="display:none"></button>
       <button class="icon-btn" id="hdrDmClearBtn" onclick="showDmClearModal()" title="Очистить ЛС до даты" data-ti="trash" style="display:none"></button>
+      <button class="icon-btn" id="hdrSearchBtn" onclick="toggleMsgSearch()" title="Поиск по сообщениям" data-i18n-title="search.messages" data-ti="search" style="display:none"></button>
       <button class="icon-btn" id="hdrCopyLink" onclick="copyChannelLink()" title="Ссылка" data-ti="link" style="display:none"></button>
       <button class="icon-btn" id="memberToggleBtn" onclick="toggleMemberSidebar()" title="Участники" data-i18n-title="common.members"><span id="memberCountBadge"></span></button>
 
@@ -8919,6 +9166,21 @@ html[data-theme] body.dynbg-off #typingBar{
   </div>
   <div id="chView" style="display:none;flex:1;flex-direction:column;overflow:hidden;min-height:0">
     <div id="chBanner"></div>
+    <div id="msgSearchPanel" style="display:none">
+      <div class="msg-search-row">
+        <span class="msg-search-ic" data-ti="search"></span>
+        <input id="msgSearchInp" class="msg-search-inp" type="text" autocomplete="off"
+               placeholder="Поиск по сообщениям…" data-i18n-ph="search.placeholder"
+               oninput="onMsgSearchInput()" onkeydown="if(event.key==='Escape')closeMsgSearch()">
+        <div class="msg-search-modes">
+          <button class="msg-search-mode active" data-mode="all" onclick="setMsgSearchMode('all',this)" data-i18n="search.modeAll">Везде</button>
+          <button class="msg-search-mode" data-mode="text" onclick="setMsgSearchMode('text',this)" data-i18n="search.modeText">Текст</button>
+          <button class="msg-search-mode" data-mode="author" onclick="setMsgSearchMode('author',this)" data-i18n="search.modeAuthor">Автор</button>
+        </div>
+        <button class="icon-btn msg-search-close" onclick="closeMsgSearch()" title="Закрыть" data-i18n-title="common.close" data-ti="x"></button>
+      </div>
+      <div id="msgSearchResults" class="msg-search-results"></div>
+    </div>
     <div id="messagesWrap"><div id="messagesList"></div></div>
     <div id="typingBar"></div>
     <div id="inputOuter">
@@ -8945,6 +9207,7 @@ html[data-theme] body.dynbg-off #typingBar{
         <div style="min-width:0"><h2 id="voiceStageName" data-i18n="voice.stageTitle">Голосовой канал</h2><p id="voiceStageStatus" data-i18n="voice.connecting">Подключение…</p></div>
       </div>
       <div class="voice-stage-actions">
+        <button class="vs-btn icon-only" id="voiceMembersBtn" onclick="voiceStageToggleSide(event)" title="Участники" data-i18n-title="common.members"><span class="ti"><svg viewBox="0 0 24 24" width="15" height="15"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M3 20a6 6 0 0 1 12 0" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/><circle cx="17" cy="9" r="2.4" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M16 14.5a5 5 0 0 1 5 5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg></span></button>
         <button class="vs-btn" id="voiceWatchBtn" onclick="watchPrompt()" title="Совместный просмотр" data-i18n-title="watch.start"><span class="ti"><svg viewBox="0 0 24 24" width="15" height="15"><rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/><polygon points="10,7 15,10 10,13" fill="currentColor"/></svg></span><span class="lbl" data-i18n="watch.watch">Смотреть вместе</span></button>
         <button class="vs-btn" id="voiceStageFullscreenBtn" onclick="voiceStageFullscreenStream(event)" title="Открыть трансляцию во весь экран" data-i18n-title="stream.openFullscreen"><span class="ti"><svg viewBox="0 0 24 24" width="15" height="15"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="lbl" data-i18n="common.fullscreen">Весь экран</span></button>
         <button class="vs-btn" id="voiceStageDetachBtn" onclick="voiceStageOpenFloatingStream()" title="Открыть трансляцию отдельным окном" data-i18n-title="voice.openSeparateWindow"><span class="ti"><svg viewBox="0 0 24 24" width="15" height="15"><path d="M15 3h6v6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M10 14L21 3" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg></span><span class="lbl" data-i18n="common.window">Окно</span></button>
@@ -8958,17 +9221,24 @@ html[data-theme] body.dynbg-off #typingBar{
           <div class="voice-stage-grid" id="voiceStageGrid"></div>
         </div>
         <div class="voice-stage-stream" id="voiceStageStream" onclick="voiceStageTapPrimary(event)">
-          <div class="watch-player-wrap" id="watchPlayerWrap" style="display:none">
+          <div class="watch-player-wrap" id="watchPlayerWrap">
             <div id="watchPlayerHost"></div>
             <div class="watch-bar">
               <span class="watch-live"><span class="watch-dot"></span><span id="watchHostName" data-i18n="watch.sharedView">Совместный просмотр</span></span>
               <span class="watch-bar-actions">
+                <button class="vs-watch-btn watch-emoji-toggle" onclick="watchToggleEmojiBar(event)" title="Реакции" data-i18n-title="watch.reactions"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" fill="none"/><circle cx="9" cy="10" r="1.2" fill="currentColor"/><circle cx="15" cy="10" r="1.2" fill="currentColor"/><path d="M8.5 14.5a4 4 0 0 0 7 0" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg></button>
+                <button class="vs-watch-btn watch-chat-toggle" onclick="watchToggleChat(event)" title="Чат просмотра" data-i18n-title="watch.chat"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7A8.38 8.38 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                <button class="vs-watch-btn watch-float-btn" onclick="watchToggleFloat(event)" title="Открыть окном" data-i18n-title="voice.openWindow"><svg viewBox="0 0 24 24"><path d="M15 3h6v6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M10 14L21 3" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg></button>
                 <button class="vs-watch-btn" onclick="watchSyncPull(event)" title="Синхронизировать со всеми" data-i18n-title="watch.resync"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/><polyline points="21 3 21 9 15 9" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                 <button class="vs-watch-btn" onclick="watchClose(true);event.stopPropagation()" title="Закрыть просмотр" data-i18n-title="watch.close"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
               </span>
             </div>
           </div>
           <div class="vs-watch-pill" id="voiceStageWatchPill"><span class="vs-live-dot"></span><span id="voiceStageWatchName" data-i18n="voice.streaming">Трансляция</span><span class="vs-watch-actions"><button class="vs-watch-btn" onclick="voiceStageFullscreenStream(event)" title="Во весь экран" aria-label="Во весь экран" data-i18n-title="stream.openFullscreen" data-i18n-aria="stream.openFullscreen"><svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="vs-watch-btn" onclick="voiceStageOpenFloatingStream();event.stopPropagation()" title="Открыть окном" aria-label="Открыть окном" data-i18n-title="voice.openWindow" data-i18n-aria="voice.openWindow"><svg viewBox="0 0 24 24"><path d="M15 3h6v6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M10 14L21 3" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg></button></span></div>
+          <div class="vs-stream-overlay" id="vsStreamOverlay">
+            <button class="vs-watch-btn" onclick="voiceEmojiToggle(event)" title="Реакции" data-i18n-title="watch.reactions"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" fill="none"/><circle cx="9" cy="10" r="1.2" fill="currentColor"/><circle cx="15" cy="10" r="1.2" fill="currentColor"/><path d="M8.5 14.5a4 4 0 0 0 7 0" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg></button>
+            <button class="vs-watch-btn" onclick="voiceChatToggle(event)" title="Чат канала" data-i18n-title="watch.chat"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7A8.38 8.38 0 0 1 4 11.5 8.5 8.5 0 0 1 12.5 3 8.38 8.38 0 0 1 21 11.5z" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
           <div class="vs-empty-stream" id="voiceStageEmpty">
             <div class="big"><span class="ti"><svg viewBox="0 0 24 24" width="34" height="34"><rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/><line x1="8" y1="21" x2="16" y2="21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span></div>
             <b data-i18n="voice.opened">Голосовой канал открыт</b>
@@ -8982,8 +9252,21 @@ html[data-theme] body.dynbg-off #typingBar{
         </div>
       </div>
       <aside class="voice-stage-side">
-        <div class="voice-stage-side-head"><span data-i18n="common.members">Участники</span><span id="voiceStageCount">0</span></div>
-        <div class="voice-stage-users" id="voiceStageUsers"></div>
+        <div class="voice-stage-side-tabs">
+          <button class="vss-tab active" id="vssTabMembers" onclick="voiceSideTab('members')" data-i18n="common.members">Участники</button>
+          <button class="vss-tab" id="vssTabChat" onclick="voiceSideTab('chat')" data-i18n="watch.chat">Чат</button>
+        </div>
+        <div class="voice-stage-side-pane" id="vssMembersPane">
+          <div class="voice-stage-side-head"><span data-i18n="common.members">Участники</span><span id="voiceStageCount">0</span></div>
+          <div class="voice-stage-users" id="voiceStageUsers"></div>
+        </div>
+        <div class="voice-stage-side-pane vc-chat-pane" id="vssChatPane" style="display:none">
+          <div class="vc-chat-list" id="vcChatList"><div class="vc-chat-empty" data-i18n="watch.chatEmpty">Пока нет сообщений. Напишите первым!</div></div>
+          <div class="vc-chat-input-row">
+            <input id="vcChatInp" class="vc-chat-inp" maxlength="500" placeholder="Сообщение в чат канала…" data-i18n-ph="watch.chatPh" onkeydown="if(event.key==='Enter')voiceChatSend()">
+            <button class="vc-chat-send" onclick="voiceChatSend()" title="Отправить"><svg viewBox="0 0 24 24" width="16" height="16"><line x1="22" y1="2" x2="11" y2="13" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><polygon points="22 2 15 22 11 13 2 9 22 2" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        </div>
       </aside>
     </div>
   </div>
@@ -10537,6 +10820,10 @@ async function initApp(){
   // В мобильном виде эффекты всегда выключены, независимо от сохранённого выбора.
   // «Живая анимация» удалена как функция — слой никогда не включается.
   const _effMobileOff = isMobileLike();
+  // Body-класс для CSS-правил, зависящих от мобильного вида (напр. скрытие трансляции).
+  function _syncMobileClass(){ document.body.classList.toggle('is-mobile-view', isMobileLike()); }
+  _syncMobileClass();
+  window.addEventListener('resize',()=>{ try{_syncMobileClass();}catch(_){}} );
   if(_effMobileOff || localStorage.getItem('tes3DynBg')!=='1') document.body.classList.add('dynbg-off');
   // Северное сияние включено по умолчанию; выключаем только при явном выборе '0'.
   if(localStorage.getItem('tes3Aurora')==='0') document.body.classList.add('aurora-off');
@@ -11010,7 +11297,7 @@ function openVoiceWorkspace(roomId,roomName){
   q('dmView')&&(q('dmView').style.display='none');
   q('joinServerScreen')&&q('joinServerScreen').classList.remove('show');
   vs.style.display='flex';vs.classList.add('show');
-  q('hdrCopyLink')&&(q('hdrCopyLink').style.display='none');
+  q('hdrCopyLink')&&(q('hdrCopyLink').style.display='none');if(q('hdrSearchBtn'))q('hdrSearchBtn').style.display='none';if(typeof closeMsgSearch==='function')closeMsgSearch();
   q('hdrCallBtn')&&(q('hdrCallBtn').style.display='none');
   q('hdrVideoCallBtn')&&(q('hdrVideoCallBtn').style.display='none');
   q('hdrDmPrivacyBtn')&&(q('hdrDmPrivacyBtn').style.display='none');
@@ -12490,6 +12777,7 @@ async function selectChannel(id){
   q('welcomeScreen').style.display='none';q('dmView').style.display='none';q('voiceStage')&&(q('voiceStage').classList.remove('show'),q('voiceStage').style.display='none');q('joinServerScreen').classList.remove('show');
   q('chView').style.display='flex';q('chView').style.flexDirection='column';if(window.innerWidth<=980) closeOverlays();
   q('hdrCopyLink').style.display='flex';q('hdrCallBtn').style.display='none';if(q('hdrVideoCallBtn')) q('hdrVideoCallBtn').style.display='none';if(q('hdrDmPrivacyBtn')) q('hdrDmPrivacyBtn').style.display='none';q('hdrDmClearBtn').style.display='none';
+  if(q('hdrSearchBtn')) q('hdrSearchBtn').style.display='flex';
 q('memberToggleBtn').style.display='';
   cancelReply();
   const ch=S.channels.find(c=>c.id===id);updateChHeader(ch);
@@ -12664,6 +12952,7 @@ async function voiceLeave(silent=false){
   // 6. Фиксируем ID комнаты и сбрасываем состояние
   const wasRoom=VOICE.roomId;
   VOICE.roomId=null;VOICE.roomName='';VOICE.muted=false;
+  window._vcChatLoaded=0;  // чтобы чат перезагрузился при следующем входе
   VOICE.streamers={};VOICE.currentStreamUserId=null;VOICE.streamInlineActive=false;
   document.body.classList.remove('vglow-local','vglow-remote');
   try{ if(WATCH.active) watchClose(false); }catch(_){}
@@ -12886,11 +13175,100 @@ window.voiceKickFromMenu=function(uid){
 
 // Handle incoming voice-kicked and voice-force-mute signals
 // ══════════════════════════════════════════════════════════════
+//  Поиск по сообщениям (по содержимому и автору)
+// ══════════════════════════════════════════════════════════════
+const MSGSEARCH={open:false,mode:'all',timer:null,lastQuery:''};
+
+window.toggleMsgSearch=function(){
+  if(MSGSEARCH.open) closeMsgSearch(); else openMsgSearch();
+};
+window.openMsgSearch=function(){
+  const panel=q('msgSearchPanel'); if(!panel) return;
+  MSGSEARCH.open=true; panel.style.display='flex';
+  const inp=q('msgSearchInp'); if(inp){ inp.value=''; setTimeout(()=>inp.focus(),40); }
+  const box=q('msgSearchResults'); if(box) box.innerHTML=`<div class="msg-search-hint">${tf('search.hint','Введите запрос — поиск по тексту или автору')}</div>`;
+};
+window.closeMsgSearch=function(){
+  const panel=q('msgSearchPanel'); if(!panel) return;
+  MSGSEARCH.open=false; panel.style.display='none';
+  MSGSEARCH.lastQuery='';
+};
+window.setMsgSearchMode=function(mode,btn){
+  MSGSEARCH.mode=mode;
+  document.querySelectorAll('.msg-search-mode').forEach(b=>b.classList.toggle('active',b===btn));
+  const inp=q('msgSearchInp'); if(inp&&inp.value.trim()) runMsgSearch(inp.value.trim());
+};
+window.onMsgSearchInput=function(){
+  const inp=q('msgSearchInp'); if(!inp) return;
+  const v=inp.value.trim();
+  clearTimeout(MSGSEARCH.timer);
+  if(!v){ const box=q('msgSearchResults'); if(box) box.innerHTML=`<div class="msg-search-hint">${tf('search.hint','Введите запрос — поиск по тексту или автору')}</div>`; return; }
+  MSGSEARCH.timer=setTimeout(()=>runMsgSearch(v),320); // дебаунс
+};
+async function runMsgSearch(query){
+  const box=q('msgSearchResults'); if(!box) return;
+  if(!S.chId){ box.innerHTML=`<div class="msg-search-empty">${tf('search.noResults','Сообщения не найдены')}</div>`; return; }
+  MSGSEARCH.lastQuery=query;
+  box.innerHTML=`<div class="msg-search-hint">${tf('watch.searching','Поиск…')}</div>`;
+  try{
+    const r=await api({action:'search_messages',channelId:S.chId,query:query,by:MSGSEARCH.mode,limit:60});
+    if(MSGSEARCH.lastQuery!==query) return; // пришёл устаревший ответ
+    if(!r.ok){ box.innerHTML=`<div class="msg-search-empty">${esc(r.error||'')}</div>`; return; }
+    const list=r.messages||[];
+    if(!list.length){ box.innerHTML=`<div class="msg-search-empty">${tf('search.noResults','Сообщения не найдены')}</div>`; return; }
+    const head=`<div class="msg-search-count">${tf('search.found','Найдено')}: ${list.length}</div>`;
+    box.innerHTML=head+list.map(m=>msgSearchItemHtml(m,query)).join('');
+  }catch(e){
+    box.innerHTML=`<div class="msg-search-empty">${tf('watch.searchFail','Поиск не удался')}</div>`;
+  }
+}
+function msgSearchHighlight(text,query){
+  const t=esc(String(text||''));
+  if(!query) return t;
+  try{
+    const safe=query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    return t.replace(new RegExp('('+safe+')','gi'),'<mark>$1</mark>');
+  }catch(_){ return t; }
+}
+function msgSearchItemHtml(m,query){
+  const name=esc(m.userName||m.user_name||m.name||'');
+  const avatar=m.avatar?`<img src="${esc(m.avatar)}" alt="">`:esc((name||'?').charAt(0).toUpperCase());
+  let when=''; try{ const d=new Date(Number(m.at||m.ts||0)); if(!isNaN(d)) when=d.toLocaleDateString()+' '+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }catch(_){}
+  const txt=m.text?msgSearchHighlight(m.text,query):'';
+  const imgBadge=(!m.text&&(m.image||m.img))?`<span class="msr-img-badge">${ti('image',12)} ${tf('common.image','изображение')}</span>`:'';
+  const mid=m.id||m.messageId||0;
+  return `<div class="msr-item" onclick="msgSearchJump(${mid})">
+    <div class="msr-avatar">${avatar}</div>
+    <div class="msr-body">
+      <div class="msr-head"><span class="msr-name">${name}</span><span class="msr-time">${when}</span></div>
+      ${txt?`<div class="msr-text">${txt}</div>`:''}
+      ${imgBadge}
+    </div>
+  </div>`;
+}
+// Переход к сообщению: подсветить, если оно в ленте; иначе уведомить.
+window.msgSearchJump=function(mid){
+  if(!mid) return;
+  const el=document.querySelector(`[data-msg-id="${mid}"]`);
+  if(el){
+    closeMsgSearch();
+    if(typeof scrollToMsg==='function'){ scrollToMsg(mid); }
+    else { el.scrollIntoView({behavior:'smooth',block:'center'}); el.classList.add('msg-jump-flash'); setTimeout(()=>el.classList.remove('msg-jump-flash'),1600); }
+  } else {
+    toast(tf('search.jumpScroll','Сообщение выше — прокрутите ленту, чтобы загрузить его'),'info',3000);
+  }
+};
+
+// ══════════════════════════════════════════════════════════════
 //  Совместный просмотр YouTube (синхронный, через voice-сигналинг)
 // ══════════════════════════════════════════════════════════════
 const WATCH={active:false,player:null,videoId:'',apiLoading:false,apiReady:false,
   suppress:false,        // подавляем исходящие события когда применяем удалённое состояние
-  lastSentAt:0};
+  lastSentAt:0,
+  volume:80,             // громкость плеера 0..100 (сохраняется в localStorage)
+  muted:false,
+  floating:false};       // вынесен ли плеер в плавающее окно
+try{ const _wv=localStorage.getItem('tes3WatchVol'); if(_wv!=null) WATCH.volume=Math.max(0,Math.min(100,parseInt(_wv,10)||80)); }catch(_){}
 
 // Извлекает ID видео из ссылки YouTube (watch?v=, youtu.be/, shorts/, embed/).
 function watchParseId(url){
@@ -12920,20 +13298,63 @@ function watchLoadApi(cb){
   document.head.appendChild(s);
 }
 
-// Запрос ссылки у пользователя (открывает модалку ввода).
+// Запрос ссылки у пользователя (открывает модалку ввода / поиска).
 window.watchPrompt=function(){
   if(!VOICE.roomId){ toast(tf('watch.needVoice','Зайдите в голосовой канал'),'info'); return; }
   showModal(`
     <div style="padding:4px">
       <h2 style="margin:0 0 6px">${ti('chat',18)} ${tf('watch.title','Совместный просмотр')}</h2>
-      <p style="margin:0 0 14px;color:var(--text3);font-size:13px">${tf('watch.hint','Вставьте ссылку на видео YouTube — оно запустится у всех в этом голосовом канале одновременно.')}</p>
-      <input class="fi" id="watchUrlInp" placeholder="https://youtube.com/watch?v=…" style="width:100%;margin-bottom:14px" onkeydown="if(event.key==='Enter')watchStartFromInput()">
-      <div class="btn-row">
+      <p style="margin:0 0 12px;color:var(--text3);font-size:13px">${tf('watch.hint','Вставьте ссылку на видео YouTube или найдите его поиском — оно запустится у всех в этом голосовом канале одновременно.')}</p>
+      <div class="watch-search-row">
+        <input class="fi" id="watchUrlInp" placeholder="${tf('watch.searchPh','Ссылка или поиск по YouTube…')}" style="flex:1;min-width:0" onkeydown="if(event.key==='Enter')watchSmartGo()">
+        <button class="btn btn-gold" onclick="watchSmartGo()" style="flex-shrink:0">${ti('search',15)}</button>
+      </div>
+      <div id="watchSearchResults" class="watch-search-results"></div>
+      <div class="btn-row" style="margin-top:14px">
         <button class="btn btn-ghost" onclick="closeModal()">${tf('common.cancel','Отмена')}</button>
-        <button class="btn btn-gold" onclick="watchStartFromInput()">${tf('watch.start','Запустить')}</button>
       </div>
     </div>`);
   setTimeout(()=>q('watchUrlInp')?.focus(),50);
+};
+
+// «Умный» ввод: если это ссылка/ID — сразу запускаем; иначе — ищем.
+window.watchSmartGo=function(){
+  const v=(q('watchUrlInp')?.value||'').trim();
+  if(!v) return;
+  const id=watchParseId(v);
+  if(id){ closeModal(); watchOpen(id,0,true,true); return; }
+  watchDoSearch(v);
+};
+
+window.watchDoSearch=async function(query){
+  const box=q('watchSearchResults'); if(!box) return;
+  box.innerHTML=`<div class="watch-search-loading">${tf('watch.searching','Поиск…')}</div>`;
+  try{
+    const r=await api({action:'youtube_search',query:query});
+    if(!r.ok){ box.innerHTML=`<div class="watch-search-empty">${esc(r.error||tf('watch.searchFail','Поиск не удался'))}</div>`; return; }
+    const list=r.results||[];
+    if(!list.length){ box.innerHTML=`<div class="watch-search-empty">${tf('watch.noResults','Ничего не найдено')}</div>`; return; }
+    box.innerHTML=list.map(v=>`
+      <div class="watch-yt-item" onclick="watchPickResult('${esc(v.id)}')" role="button" tabindex="0">
+        <div class="watch-yt-thumb">
+          <img src="${esc(v.thumbnail)}" loading="lazy" alt="">
+          ${v.duration?`<span class="watch-yt-dur">${esc(v.duration)}</span>`:''}
+          <span class="watch-yt-play">${ti('play',16)}</span>
+        </div>
+        <div class="watch-yt-meta">
+          <div class="watch-yt-title">${esc(v.title)}</div>
+          ${v.author?`<div class="watch-yt-author">${esc(v.author)}</div>`:''}
+        </div>
+      </div>`).join('');
+  }catch(e){
+    box.innerHTML=`<div class="watch-search-empty">${tf('watch.searchFail','Поиск не удался')}</div>`;
+  }
+};
+
+window.watchPickResult=function(videoId){
+  if(!videoId) return;
+  closeModal();
+  watchOpen(videoId,0,true,true);
 };
 
 window.watchStartFromInput=function(){
@@ -12949,23 +13370,129 @@ function watchOpen(videoId,startSeconds,broadcast,autoplay){
   if(!videoId) return;
   WATCH.videoId=videoId; WATCH.active=true;
   const wrap=q('watchPlayerWrap'); const empty=q('voiceStageEmpty');
-  if(wrap) wrap.style.display='block';
+  if(wrap){ wrap.style.display=''; wrap.classList.add('shown'); }
   if(empty) empty.style.display='none';
   q('voiceStageStream')?.classList.add('watch-active');
+  q('voiceStage')?.classList.add('watch-on','has-stream');
   watchLoadApi(()=>{
     const host=q('watchPlayerHost'); if(!host) return;
     host.innerHTML='<div id="watchYtTarget"></div>';
+    let _origin=''; try{_origin=window.location.origin;}catch(_){}
+    // Реальные размеры контейнера — YouTube API надёжнее рендерит видео по пикселям,
+    // чем по '100%' (при '100%' iframe иногда остаётся 0×0 → чёрный экран при живом звуке).
+    let pw=host.clientWidth||640, ph=host.clientHeight||360;
+    if(pw<50) pw=640; if(ph<50) ph=360;
     WATCH.player=new YT.Player('watchYtTarget',{
-      width:'100%',height:'100%',videoId:videoId,
-      playerVars:{autoplay:autoplay?1:0,rel:0,modestbranding:1,playsinline:1,start:Math.floor(startSeconds||0)},
+      width:pw, height:ph, videoId:videoId,
+      playerVars:{
+        autoplay:autoplay?1:0,rel:0,modestbranding:1,playsinline:1,
+        start:Math.floor(startSeconds||0),
+        enablejsapi:1,
+        origin:_origin||undefined,
+        fs:1
+      },
       events:{
-        'onReady':(e)=>{ if(startSeconds>0){try{e.target.seekTo(startSeconds,true);}catch(_){}} if(autoplay){try{e.target.playVideo();}catch(_){}} },
-        'onStateChange':watchOnStateChange
+        'onReady':(e)=>{
+          try{e.target.setVolume(WATCH.volume!=null?WATCH.volume:100);}catch(_){}
+          if(startSeconds>0){try{e.target.seekTo(startSeconds,true);}catch(_){}}
+          if(autoplay){try{e.target.playVideo();}catch(_){}}
+          watchFixIframe();
+          watchBuildVolumeUI();
+          watchSetupAutohide();
+          // Повторная подгонка: контейнер мог получить размеры чуть позже
+          setTimeout(watchFixIframe,300);
+          setTimeout(watchFixIframe,1000);
+        },
+        'onStateChange':watchOnStateChange,
+        'onError':(e)=>{ toast(tf('watch.videoError','Это видео нельзя встроить (ограничение автора)'),'err',4000); }
       }
     });
   });
   if(broadcast) watchSend('watch-open',{videoId:videoId,t:Math.floor(startSeconds||0)});
 }
+
+// Принудительно растягивает iframe плеера на весь контейнер (борьба с 0×0).
+function watchFixIframe(){
+  const host=q('watchPlayerHost'); if(!host) return;
+  const fr=host.querySelector('iframe'); if(!fr) return;
+  fr.style.border='0'; fr.style.display='block';
+  fr.setAttribute('width','100%'); fr.setAttribute('height','100%');
+  fr.setAttribute('allow','autoplay; encrypted-media; picture-in-picture; fullscreen');
+  fr.setAttribute('allowfullscreen','');
+  try{ if(WATCH.player&&WATCH.player.setSize){ WATCH.player.setSize(host.clientWidth||640, host.clientHeight||360); } }catch(_){}
+}
+
+// Автоскрытие панели управления: показываем при активности, прячем через 3 сек.
+function watchSetupAutohide(){
+  const wrap=q('watchPlayerWrap'); if(!wrap||wrap._autohideSet) return;
+  wrap._autohideSet=true;
+  const show=()=>{
+    wrap.classList.remove('bar-hidden');
+    clearTimeout(WATCH._barTimer);
+    WATCH._barTimer=setTimeout(()=>{ if(WATCH.active) wrap.classList.add('bar-hidden'); },3000);
+  };
+  ['mousemove','mouseenter','touchstart','click'].forEach(ev=>wrap.addEventListener(ev,show,{passive:true}));
+  // не прятать, пока курсор над самим баром
+  const bar=wrap.querySelector('.watch-bar');
+  if(bar){ bar.addEventListener('mouseenter',()=>{ clearTimeout(WATCH._barTimer); wrap.classList.remove('bar-hidden'); }); }
+  show();
+}
+
+// Плавающее окно watch party: переносим существующий DOM плеера
+// в плавающий контейнер (без пересоздания — видео не прерывается).
+window.watchToggleFloat=function(ev){
+  ev&&ev.stopPropagation();
+  if(WATCH.floating) watchDockBack(); else watchPopOut();
+};
+function watchEnsureFloatHost(){
+  let fw=q('watchFloatWindow');
+  if(fw) return fw;
+  fw=document.createElement('div');
+  fw.id='watchFloatWindow';
+  fw.className='watch-float-window';
+  fw.innerHTML=`
+    <div class="watch-float-head" id="watchFloatHead">
+      <span class="watch-float-dot"></span>
+      <span class="watch-float-title">${tf('watch.sharedView','Совместный просмотр')}</span>
+      <span class="watch-float-actions">
+        <button class="vs-watch-btn" onclick="watchDockBack();event.stopPropagation()" title="${tf('voice.dockBack','Вернуть на место')}"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2v-4M3 9V5a2 2 0 0 1 2-2h4M15 3h4a2 2 0 0 1 2 2v4M21 15v4a2 2 0 0 1-2 2h-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg></button>
+        <button class="vs-watch-btn" onclick="watchClose(true);event.stopPropagation()" title="${tf('watch.close','Закрыть')}"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      </span>
+    </div>
+    <div class="watch-float-body" id="watchFloatBody"></div>`;
+  document.body.appendChild(fw);
+  try{ if(typeof makeDraggable==='function') makeDraggable(fw,q('watchFloatHead')); }catch(_){}
+  return fw;
+}
+function watchPopOut(){
+  const wrap=q('watchPlayerWrap'); if(!wrap||!WATCH.active) return;
+  const fw=watchEnsureFloatHost();
+  const body=q('watchFloatBody');
+  // прячем встроенный бар внутри плеера — у плавающего окна свой хедер
+  const bar=wrap.querySelector('.watch-bar'); if(bar) bar.style.display='none';
+  body.appendChild(wrap);            // переносим сам плеер (iframe сохраняется)
+  wrap.style.position='absolute'; wrap.style.inset='0';
+  fw.style.display='flex';
+  WATCH.floating=true;
+  setTimeout(watchFixIframe,80);
+  setTimeout(watchFixIframe,400);
+}
+window.watchDockBack=function(){
+  const wrap=q('watchPlayerWrap'); const stage=q('voiceStageStream');
+  const fw=q('watchFloatWindow');
+  if(!wrap||!stage) return;
+  // вернуть плеер обратно на сцену голосового канала
+  stage.appendChild(wrap);
+  wrap.style.position='absolute'; wrap.style.inset='0';
+  const bar=wrap.querySelector('.watch-bar'); if(bar) bar.style.display='';
+  if(fw) fw.style.display='none';
+  WATCH.floating=false;
+  setTimeout(watchFixIframe,80);
+  setTimeout(watchFixIframe,400);
+};
+// Подгоняем плеер при входе/выходе из полноэкранного режима.
+document.addEventListener('fullscreenchange',()=>{ if(WATCH.active){ setTimeout(watchFixIframe,150); setTimeout(watchFixIframe,500);} });
+document.addEventListener('webkitfullscreenchange',()=>{ if(WATCH.active){ setTimeout(watchFixIframe,150);} });
 
 // Локальные изменения плеера → рассылаем остальным (если не мы применяем удалённое).
 function watchOnStateChange(e){
@@ -13004,6 +13531,12 @@ function watchHandleSignal(sig){
     case 'watch-play':  watchApply(d.t,true); break;
     case 'watch-pause': watchApply(d.t,false); break;
     case 'watch-seek':  watchApply(d.t,null); break;
+    case 'watch-emoji': watchShowEmoji(d.emoji,sig.name||'',d.uid); break;
+    case 'watch-chat':
+      watchAddChatMsg(sig.name||'',d.text||'',false);     // в watch-плеер (если открыт)
+      voiceChatAppend(sig.name||'',d.text||'',false,true); // в чат голосового канала
+      { const b=q("voiceMembersBtn"); if(b&&!(q("voiceStage")?.classList.contains("side-open"))) b.classList.add("has-unread"); }
+      break;
   }
 }
 
@@ -13022,20 +13555,279 @@ function watchApply(t,playing){
   setTimeout(()=>{WATCH.suppress=false;},400);
 }
 
-// Кнопка «ресинхронизация»: запросить актуальное состояние у других.
-window.watchSyncPull=function(ev){ ev&&ev.stopPropagation(); watchSend('watch-request-state',{}); toast(tf('watch.resyncing','Синхронизация…'),'info',1500); };
+// Боковая панель «Участники» в голосовом стейдже — по кнопке в шапке.
+window.voiceStageToggleSide=function(ev){
+  ev&&ev.stopPropagation();
+  const vs=q('voiceStage'); if(!vs) return;
+  const open=vs.classList.toggle('side-open');
+  const btn=q('voiceMembersBtn'); if(btn) btn.classList.toggle('active',open);
+  if(open) voiceSideTab('members');
+};
+// Переключение вкладок боковой панели (Участники / Чат).
+window.voiceSideTab=function(tab){
+  const mp=q('vssMembersPane'), cp=q('vssChatPane');
+  const tm=q('vssTabMembers'), tc=q('vssTabChat');
+  const isChat=tab==='chat';
+  if(mp) mp.style.display=isChat?'none':'flex';
+  if(cp) cp.style.display=isChat?'flex':'none';
+  if(tm) tm.classList.toggle('active',!isChat);
+  if(tc) tc.classList.toggle('active',isChat);
+  if(isChat){ voiceChatLoad(); setTimeout(()=>q('vcChatInp')?.focus(),50); const b=q('voiceMembersBtn'); if(b) b.classList.remove('has-unread'); }
+};
+// Открыть/закрыть боковую панель сразу на вкладке «Чат».
+window.voiceChatToggle=function(ev){
+  ev&&ev.stopPropagation();
+  const vs=q('voiceStage'); if(!vs) return;
+  const onChat=vs.classList.contains('side-open')&&q('vssChatPane')?.style.display!=='none';
+  if(onChat){ vs.classList.remove('side-open'); const b=q('voiceMembersBtn'); if(b) b.classList.remove('active'); return; }
+  vs.classList.add('side-open');
+  const b=q('voiceMembersBtn'); if(b) b.classList.add('active');
+  voiceSideTab('chat');
+};
+// Загрузка истории чата голосового канала из БД.
+window._vcChatLoaded=0;
+async function voiceChatLoad(){
+  const vcId=VOICE.roomId; const list=q('vcChatList'); if(!vcId||!list) return;
+  if(window._vcChatLoaded===vcId) return;            // уже загружен для этого канала
+  window._vcChatLoaded=vcId;
+  list.innerHTML=`<div class="vc-chat-empty">${tf('watch.searching','Загрузка…')}</div>`;
+  try{
+    const r=await api({action:'messages',channelId:vcId,limit:60});
+    const msgs=(r&&r.messages)||[];
+    if(!msgs.length){ list.innerHTML=`<div class="vc-chat-empty">${tf('watch.chatEmpty','Пока нет сообщений. Напишите первым!')}</div>`; return; }
+    list.innerHTML='';
+    msgs.forEach(m=>voiceChatAppend(m.userName||m.user_name||'',m.text||'',(m.userId||m.user_id)===(S.me&&S.me.id),false));
+  }catch(_){ list.innerHTML=`<div class="vc-chat-empty">${tf('watch.searchFail','Не удалось загрузить')}</div>`; }
+}
+function voiceChatAppend(name,text,mine,scroll){
+  const list=q('vcChatList'); if(!list||!text) return;
+  const empty=list.querySelector('.vc-chat-empty'); if(empty) empty.remove();
+  const row=document.createElement('div'); row.className='vc-chat-msg'+(mine?' mine':'');
+  row.innerHTML=`<span class="vc-chat-name">${esc(name)}</span><span class="vc-chat-text">${esc(text)}</span>`;
+  list.appendChild(row);
+  if(scroll!==false) list.scrollTop=list.scrollHeight;
+}
+window.voiceChatSend=function(){
+  const inp=q('vcChatInp'); if(!inp) return;
+  const text=inp.value.trim(); if(!text) return;
+  const vcId=VOICE.roomId; if(!vcId){ toast(tf('watch.needVoice','Зайдите в голосовой канал'),'info'); return; }
+  inp.value='';
+  voiceChatAppend(tf('common.you','вы'),text,true,true);
+  watchSend('watch-chat',{text:text});                          // живой сигнал зрителям
+  api({action:'send',channelId:vcId,text:text,image:''}).catch(()=>{}); // сохраняем в БД
+};
+// Эмоции голосового канала (доступны из любого состояния).
+window.voiceEmojiToggle=function(ev){
+  ev&&ev.stopPropagation();
+  let bar=q('voiceEmojiBar');
+  const stage=q('voiceStageStream')||q('voiceStage'); if(!stage) return;
+  if(!bar){
+    bar=document.createElement('div'); bar.id='voiceEmojiBar'; bar.className='watch-emoji-bar voice-emoji-bar';
+    bar.innerHTML=WATCH_EMOJIS.map(e=>`<button class="watch-emoji-pick" onclick="voiceSendEmoji('${e}')">${e}</button>`).join('');
+    (q('voiceStage')||document.body).appendChild(bar);
+  }
+  bar.classList.toggle('open');
+};
+window.voiceSendEmoji=function(emoji){
+  const myId=S.me&&S.me.id;
+  watchShowEmoji(emoji,tf('common.you','вы'),myId);
+  watchSend('watch-emoji',{emoji:emoji,uid:myId});
+  const bar=q('voiceEmojiBar'); if(bar) bar.classList.remove('open');
+};
+
+// ── Эмоции (летящие реакции) ──
+const WATCH_EMOJIS=['❤️','😂','🔥','👍','😮','😢','👏','🎉'];
+window.watchToggleEmojiBar=function(ev){
+  ev&&ev.stopPropagation();
+  let bar=q('watchEmojiBar');
+  const host=q('watchPlayerWrap'); if(!host) return;
+  if(!bar){
+    bar=document.createElement('div'); bar.id='watchEmojiBar'; bar.className='watch-emoji-bar';
+    bar.innerHTML=WATCH_EMOJIS.map(e=>`<button class="watch-emoji-pick" onclick="watchSendEmoji('${e}')">${e}</button>`).join('');
+    host.appendChild(bar);
+  }
+  bar.classList.toggle('open');
+};
+window.watchSendEmoji=function(emoji){
+  const myId=S.me&&S.me.id;
+  watchShowEmoji(emoji,tf('common.you','вы'),myId);            // показываем у себя
+  watchSend('watch-emoji',{emoji:emoji,uid:myId});             // и рассылаем
+  const bar=q('watchEmojiBar'); if(bar) bar.classList.remove('open');
+};
+// Анимация всплывающей эмоции.
+// Если активна трансляция/просмотр — летит в окне трансляции.
+// Иначе (обычный голосовой) — отлетает от аватара отправителя в сетке участников.
+function watchShowEmoji(emoji,who,uid){
+  if(!emoji) return;
+  const stage=q('voiceStage');
+  const hasStream=stage&&stage.classList.contains('has-stream');
+  // 1) Обычный голосовой: летит от плитки участника
+  if(!hasStream && uid){
+    const tile=document.querySelector(`.vs-tile[data-vs-tile-user-id="${uid}"]`);
+    if(tile){
+      const av=tile.querySelector('.vs-tile-avatar')||tile;
+      const r=av.getBoundingClientRect();
+      const el=document.createElement('div'); el.className='watch-emoji-fly tile-fly'; el.textContent=emoji;
+      el.style.position='fixed';
+      el.style.left=(r.left+r.width/2-17)+'px';
+      el.style.top=(r.top)+'px';
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(),2600);
+      return;
+    }
+  }
+  // 2) Трансляция/просмотр: летит в области стрима
+  const host=q('watchPlayerHost')||q('voiceStageStream')||q('voiceStage'); if(!host) return;
+  const el=document.createElement('div'); el.className='watch-emoji-fly'; el.textContent=emoji;
+  el.style.left=(15+Math.random()*60)+'%';
+  host.appendChild(el);
+  setTimeout(()=>el.remove(),2600);
+}
+
+// ── Чат трансляции ──
+window.watchToggleChat=function(ev){
+  ev&&ev.stopPropagation();
+  const wrap=q('watchPlayerWrap'); if(!wrap) return;
+  watchEnsureChatDom();
+  wrap.classList.toggle('chat-open');
+  if(wrap.classList.contains('chat-open')){
+    const btn=wrap.querySelector('.watch-chat-toggle'); if(btn) btn.classList.remove('has-unread');
+    setTimeout(()=>q('watchChatInp')?.focus(),60);
+    setTimeout(watchFixIframe,260);  // подгоняем видео после изменения раскладки
+  } else {
+    setTimeout(watchFixIframe,260);
+  }
+};
+window.watchSendChat=function(){
+  const inp=q('watchChatInp'); if(!inp) return;
+  const text=inp.value.trim(); if(!text) return;
+  inp.value='';
+  watchAddChatMsg(tf('common.you','вы'),text,true);   // мгновенно показываем у себя
+  watchSend('watch-chat',{text:text});                 // живой сигнал зрителям
+  // Сохраняем в чат голосового канала (видно во вкладке «Чат» и в истории)
+  const vcId=VOICE.roomId;
+  if(vcId){ api({action:'send',channelId:vcId,text:text,image:''}).catch(()=>{}); }
+};
+function watchEnsureChatDom(){
+  const wrap=q('watchPlayerWrap'); if(!wrap) return null;
+  let chat=q('watchChat');
+  if(!chat){
+    chat=document.createElement('div'); chat.id='watchChat'; chat.className='watch-chat';
+    chat.innerHTML=`
+      <div class="watch-chat-head"><span>${tf('watch.chat','Чат просмотра')}</span><button class="watch-chat-close" onclick="watchToggleChat(event)">✕</button></div>
+      <div class="watch-chat-list" id="watchChatList"><div class="watch-chat-empty" id="watchChatEmpty">${tf('watch.chatEmpty','Пока нет сообщений. Напишите первым!')}</div></div>
+      <div class="watch-chat-input-row">
+        <input id="watchChatInp" class="watch-chat-inp" maxlength="300" placeholder="${tf('watch.chatPh','Сообщение…')}" onkeydown="if(event.key==='Enter')watchSendChat()">
+        <button class="watch-chat-send" onclick="watchSendChat()">${ti('send',16)}</button>
+      </div>`;
+    wrap.appendChild(chat);
+  }
+  return chat;
+}
+function watchAddChatMsg(name,text,mine){
+  watchEnsureChatDom();
+  const list=q('watchChatList'); if(!list) return;
+  const empty=q('watchChatEmpty'); if(empty) empty.remove();   // убираем плейсхолдер
+  const row=document.createElement('div'); row.className='watch-chat-msg'+(mine?' mine':'');
+  row.innerHTML=`<span class="watch-chat-name">${esc(name)}</span><span class="watch-chat-text">${esc(text)}</span>`;
+  list.appendChild(row);
+  list.scrollTop=list.scrollHeight;
+  // значок непрочитанного, если чат закрыт
+  const wrap=q('watchPlayerWrap');
+  if(wrap&&!wrap.classList.contains('chat-open')&&!mine){
+    const btn=wrap.querySelector('.watch-chat-toggle'); if(btn) btn.classList.add('has-unread');
+  }
+}
+
+// ── Громкость совместного просмотра ──
+// Регулятор живёт в watch-баре, в едином стеклянном стиле плеера.
+function watchBuildVolumeUI(){
+  const bar=document.querySelector('#watchPlayerWrap .watch-bar'); if(!bar) return;
+  if(bar.querySelector('.watch-vol')) { watchSyncVolumeUI(); return; }
+  const wrap=document.createElement('div');
+  wrap.className='watch-vol';
+  wrap.innerHTML=`
+    <button class="watch-vol-btn" title="${tf('watch.volume','Громкость')}" onclick="watchToggleVolPop(event)" aria-label="${tf('watch.volume','Громкость')}">
+      <span class="watch-vol-ic"></span>
+    </button>
+    <div class="watch-vol-pop" id="watchVolPop">
+      <input class="watch-vol-range" type="range" min="0" max="100" step="1"
+             value="${WATCH.volume}" aria-label="${tf('watch.volume','Громкость')}"
+             oninput="watchSetVolume(this.value)" onclick="event.stopPropagation()">
+      <button class="watch-vol-mute" onclick="watchToggleMute(event)" title="${tf('watch.mute','Звук')}"><span class="watch-vol-mute-ic"></span></button>
+    </div>`;
+  // вставляем перед группой кнопок действий
+  const actions=bar.querySelector('.watch-bar-actions');
+  bar.insertBefore(wrap, actions);
+  watchSyncVolumeUI();
+}
+// Показать/скрыть всплывающий ползунок громкости.
+window.watchToggleVolPop=function(ev){
+  ev&&ev.stopPropagation();
+  const pop=q('watchVolPop'); if(!pop) return;
+  const open=pop.classList.toggle('open');
+  if(open){
+    // закрытие по клику вне поповера
+    setTimeout(()=>{
+      const h=(e)=>{ if(!e.target.closest('.watch-vol')){ pop.classList.remove('open'); document.removeEventListener('click',h); } };
+      document.addEventListener('click',h);
+    },0);
+  }
+};
+window.watchSetVolume=function(v){
+  v=Math.max(0,Math.min(100,parseInt(v,10)||0));
+  WATCH.volume=v; WATCH.muted=(v===0);
+  try{ if(WATCH.player){ WATCH.player.setVolume(v); if(v>0&&WATCH.player.isMuted&&WATCH.player.isMuted()) WATCH.player.unMute(); } }catch(_){}
+  try{ localStorage.setItem('tes3WatchVol',String(v)); }catch(_){}
+  watchSyncVolumeUI();
+};
+window.watchToggleMute=function(ev){
+  ev&&ev.stopPropagation();
+  if(WATCH.muted||WATCH.volume===0){
+    const v=WATCH._preMute||60; WATCH.muted=false; watchSetVolume(v);
+  } else {
+    WATCH._preMute=WATCH.volume||60; WATCH.muted=true;
+    try{ if(WATCH.player) WATCH.player.setVolume(0); }catch(_){}
+    WATCH.volume=0; watchSyncVolumeUI();
+    try{ localStorage.setItem('tes3WatchVol','0'); }catch(_){}
+  }
+};
+function watchSyncVolumeUI(){
+  const bar=document.querySelector('#watchPlayerWrap .watch-bar'); if(!bar) return;
+  const range=bar.querySelector('.watch-vol-range'); if(range){ if(String(range.value)!==String(WATCH.volume)) range.value=WATCH.volume; range.style.setProperty('--vol',WATCH.volume+'%'); }
+  const ic=bar.querySelector('.watch-vol-ic'); if(!ic) return;
+  const v=WATCH.volume;
+  let svg;
+  if(v===0){
+    svg=`<svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><line x1="23" y1="9" x2="17" y2="15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="17" y1="9" x2="23" y2="15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+  } else if(v<50){
+    svg=`<svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`;
+  } else {
+    svg=`<svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`;
+  }
+  ic.innerHTML=svg;
+  const mic=bar.querySelector('.watch-vol-mute-ic'); if(mic) mic.innerHTML=svg;
+}
 
 // Закрыть просмотр. broadcast=true — сообщить остальным.
 window.watchClose=function(broadcast){
   if(broadcast && WATCH.active) watchSend('watch-close',{});
   WATCH.active=false; WATCH.videoId='';
+  // если плеер был в плавающем окне — вернуть DOM на сцену и спрятать окно
+  if(WATCH.floating){
+    const wrap=q('watchPlayerWrap'), stage=q('voiceStageStream'), fw=q('watchFloatWindow');
+    if(wrap&&stage){ stage.appendChild(wrap); wrap.style.position='absolute'; wrap.style.inset='0'; const bar=wrap.querySelector('.watch-bar'); if(bar) bar.style.display=''; }
+    if(fw) fw.style.display='none';
+    WATCH.floating=false;
+  }
   try{ WATCH.player&&WATCH.player.destroy&&WATCH.player.destroy(); }catch(_){}
   WATCH.player=null;
-  const wrap=q('watchPlayerWrap'); if(wrap) wrap.style.display='none';
+  const wrap=q('watchPlayerWrap'); if(wrap){ wrap.classList.remove('shown','chat-open','bar-hidden'); }
   const host=q('watchPlayerHost'); if(host) host.innerHTML='';
   q('voiceStageStream')?.classList.remove('watch-active');
+  q('voiceStage')?.classList.remove('watch-on');
   // вернуть пустой плейсхолдер, если нет активной видеотрансляции
-  if(!VOICE.currentStreamUserId){ const empty=q('voiceStageEmpty'); if(empty) empty.style.display=''; }
+  if(!VOICE.currentStreamUserId){ const empty=q('voiceStageEmpty'); if(empty) empty.style.display=''; q('voiceStage')?.classList.remove('has-stream'); }
 };
 
 function handleVoiceSignalSpecial(sig){
@@ -13283,6 +14075,12 @@ async function renegotiateVoicePeers(reason,opts={}){
 
 async function voiceStartStream(){
   if(VOICE.screenStream){voiceStopStream();return;}
+  // На мобильном виде демонстрация экрана недоступна (нет getDisplayMedia),
+  // а камеру через эту кнопку не запускаем — сообщаем понятно и выходим.
+  if(isMobileLike() || !navigator.mediaDevices?.getDisplayMedia){
+    toast(tf('stream.mobileBlocked','Демонстрация экрана недоступна на телефоне'),'info',3500);
+    return;
+  }
   const cur=VOICE.streamFps||30;
   const savedMode=VOICE.streamMode||'screen';
   const presets=[25,30,45,60,75,90];
