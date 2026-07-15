@@ -240,6 +240,19 @@ body.vglow-local #voiceGlow .vglow-bottom{opacity:.3;animation:vglowPulse 2.6s e
 .settings-switch-track::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--text3);transition:transform .18s,background .18s}
 .settings-switch input:checked + .settings-switch-track{background:color-mix(in srgb,var(--gold) 30%,var(--bg4));border-color:color-mix(in srgb,var(--gold) 45%,transparent)}
 .settings-switch input:checked + .settings-switch-track::after{transform:translateX(20px);background:var(--gold)}
+
+/* ОПТИМИЗАЦИЯ ДЛЯ ИГР: полное отключение тяжелого рендеринга и анимаций при сворачивании */
+body.page-is-hidden #dynBg, 
+body.page-is-hidden .aurora, 
+body.page-is-hidden #fpAurora,
+body.page-is-hidden #fpAuroraCanvas {
+  display: none !important;
+}
+body.page-is-hidden * {
+  animation: none !important;
+  transition: none !important;
+  will-change: auto !important;
+}
 #dynBg .dyn-blob{position:absolute;border-radius:50%;opacity:.5;will-change:transform;transform:translateZ(0);backface-visibility:hidden}
 /* Мягкость зашита в градиент (спад до transparent на ~70%), без filter:blur. */
 .dyn-blob.db1{width:60vw;height:60vw;background:radial-gradient(circle at 50% 50%,color-mix(in srgb,var(--gold) 60%,transparent),transparent 70%);top:-14vw;left:-10vw;animation:dynDrift1 48s ease-in-out infinite alternate}
@@ -811,7 +824,7 @@ h1,h2,h3,.modal h2,.srv-title,.hdr-ch-name,.up-name{font-family:var(--font-headi
 }
 #voiceBar.show{display:flex}
 #voiceBar.local-speaking{border-top-color:rgba(35,165,90,.45)!important;box-shadow:0 -1px 0 rgba(35,165,90,.22),0 -8px 22px rgba(0,0,0,.18)!important}
-#voiceBar.local-speaking .vb-room-name::after{content:'';margin-left:6px;padding:1px 6px;border-radius:999px;background:rgba(35,165,90,.16);border:1px solid rgba(35,165,90,.36);color:#3ba55d;font-size:10px;font-family:var(--font-body);font-weight:700;letter-spacing:.02em}
+#voiceBar.local-speaking .vb-room-name::after{display:none!important}
 #voiceBar.local-speaking #vbMuteBtn{box-shadow:0 0 0 1px rgba(35,165,90,.38) inset!important;border-color:rgba(35,165,90,.38)!important;color:#3ba55d!important}
 #voiceBar .vb-main{display:flex;align-items:center;gap:8px;min-width:0}
 #voiceBar .vb-room{flex:1;min-width:0;overflow:hidden}
@@ -1652,7 +1665,7 @@ body.is-mobile-view .vs-tile-icon-btn{display:none!important}
 /* UI inspection polish: stable SVG icon sizing and safer touch targets */
 .icon-btn svg,.dcb-btn svg,.dmvc-btn svg,.sv-btn svg,.yt-fp-btn svg{display:block;flex-shrink:0}
 .icon-btn:focus-visible,.dcb-btn:focus-visible,.dmvc-btn:focus-visible,.sv-btn:focus-visible,.yt-fp-btn:focus-visible{outline:2px solid rgba(201,170,113,.75);outline-offset:2px}
-@media(max-width:740px){.icon-btn{min-width:38px;min-height:38px}.dmvc-controls{gap:6px;overflow-x:auto;justify-content:flex-start;padding-left:10px;padding-right:10px}.dmvc-controls::-webkit-scrollbar{display:none}}
+@media(max-width:740px){.icon-btn, .up-notif-btn{min-width:38px;min-height:38px}.dmvc-controls{gap:6px;overflow-x:auto;justify-content:flex-start;padding-left:10px;padding-right:10px}.dmvc-controls::-webkit-scrollbar{display:none}}
 
 /* MENTION SUGGEST */
 #mentionSuggest{
@@ -5021,10 +5034,7 @@ html.tc-first-visit #firstVisitLoader{display:flex}
   text-shadow:0 0 18px rgba(67,181,129,.18);
 }
 [data-theme="truecolor"] #voiceBar.local-speaking .vb-room-name::after{
-  background:rgba(67,181,129,.14)!important;
-  border-color:rgba(67,181,129,.34)!important;
-  color:#8be0b0!important;
-  box-shadow:0 0 0 1px rgba(255,255,255,.02) inset, 0 0 16px rgba(67,181,129,.12)!important;
+  display:none!important;
 }
 [data-theme="truecolor"] #voiceBar.local-speaking #vbMuteBtn{
   border-color:rgba(67,181,129,.34)!important;
@@ -9771,7 +9781,24 @@ function dmCallClearVadSource(kind){const src=DMCALL_VAD[kind];if(!src) return;t
 function dmCallSetupVadSource(kind,stream,useRaw=false){dmCallClearVadSource(kind);try{const ctx=getAC();if(!ctx||!stream) return;const srcStream=useRaw?(stream._rawStream||stream):stream;const source=ctx.createMediaStreamSource(srcStream);const analyser=ctx.createAnalyser();analyser.fftSize=512;analyser.smoothingTimeConstant=0.28;source.connect(analyser);DMCALL_VAD[kind]={source,analyser,dataArray:new Uint8Array(analyser.frequencyBinCount)};}catch(e){}}
 function dmCallSpeakingFromAnalyser(entry){if(!entry?.analyser||!entry?.dataArray) return 0;entry.analyser.getByteTimeDomainData(entry.dataArray);return vadRms(entry.dataArray);}
 function dmCallSetSpeakingUI(localSpeaking,remoteSpeaking){DMCALL_VAD.localSpeaking=!!localSpeaking;DMCALL_VAD.remoteSpeaking=!!remoteSpeaking;q('dmvcLocalBox')?.classList.toggle('speaking',!!localSpeaking);q('dmvcRemoteBox')?.classList.toggle('speaking',!!remoteSpeaking);}
-function dmCallStartVADLoop(){clearInterval(DMCALL_VAD.timer);DMCALL_VAD.timer=setInterval(()=>{let localSpeaking=false,remoteSpeaking=false;if(DMCALL.active&&DMCALL_VAD.local&&!DMCALL.muted){const rms=dmCallSpeakingFromAnalyser(DMCALL_VAD.local);if(rms>DMCALL_VAD.THRESHOLD){DMCALL_VAD.localHold=DMCALL_VAD.HOLD;localSpeaking=true;}else if((DMCALL_VAD.localHold||0)>0){DMCALL_VAD.localHold--;localSpeaking=true;}}else DMCALL_VAD.localHold=0;if(DMCALL.active&&DMCALL_VAD.remote){const rms=dmCallSpeakingFromAnalyser(DMCALL_VAD.remote);if(rms>DMCALL_VAD.THRESHOLD){DMCALL_VAD.remoteHold=DMCALL_VAD.HOLD;remoteSpeaking=true;}else if((DMCALL_VAD.remoteHold||0)>0){DMCALL_VAD.remoteHold--;remoteSpeaking=true;}}else DMCALL_VAD.remoteHold=0;dmCallSetSpeakingUI(localSpeaking,remoteSpeaking);},120);}
+function dmCallStartVADLoop(){
+  clearInterval(DMCALL_VAD.timer);
+  DMCALL_VAD.timer=setInterval(()=>{
+    if(document.visibilityState === 'hidden') return;
+    let localSpeaking=false,remoteSpeaking=false;
+    if(DMCALL.active&&DMCALL_VAD.local&&!DMCALL.muted){
+      const rms=dmCallSpeakingFromAnalyser(DMCALL_VAD.local);
+      if(rms>DMCALL_VAD.THRESHOLD){DMCALL_VAD.localHold=DMCALL_VAD.HOLD;localSpeaking=true;}
+      else if((DMCALL_VAD.localHold||0)>0){DMCALL_VAD.localHold--;localSpeaking=true;}
+    }else DMCALL_VAD.localHold=0;
+    if(DMCALL.active&&DMCALL_VAD.remote){
+      const rms=dmCallSpeakingFromAnalyser(DMCALL_VAD.remote);
+      if(rms>DMCALL_VAD.THRESHOLD){DMCALL_VAD.remoteHold=DMCALL_VAD.HOLD;remoteSpeaking=true;}
+      else if((DMCALL_VAD.remoteHold||0)>0){DMCALL_VAD.remoteHold--;remoteSpeaking=true;}
+    }else DMCALL_VAD.remoteHold=0;
+    dmCallSetSpeakingUI(localSpeaking,remoteSpeaking);
+  },120);
+}
 function dmCallStopVADLoop(){clearInterval(DMCALL_VAD.timer);DMCALL_VAD.timer=null;dmCallClearVadSource('local');dmCallClearVadSource('remote');DMCALL_VAD.localHold=0;DMCALL_VAD.remoteHold=0;dmCallSetSpeakingUI(false,false);}
 
 // ── WAKE LOCK ────────────────────────────────────────────────
@@ -9860,7 +9887,7 @@ const VOICE_AUDIO={
   max:128000,
   current:32000,
   monitorMs:5000,
-  noiseGate:true,
+  noiseGate:false,
 };
 const VOICE_VIDEO={
   // Для игры/экрана слишком низкий битрейт даёт рваную картинку.
@@ -9910,7 +9937,9 @@ async function createNoiseSuppressedMicStream(rawStream){
     comp.ratio.value=3.2;
     comp.attack.value=0.004;
     comp.release.value=0.18;
-    const gate=ctx.createScriptProcessor(1024,1,1);
+    
+    // Оптимизированный буфер (4096 вместо 1024) убирает задержки основного потока браузера и пощелкивания
+    const gate=ctx.createScriptProcessor(4096,1,1);
     let gateGain=1;
     let noiseFloor=0.010;
     gate.onaudioprocess=e=>{
@@ -9919,13 +9948,18 @@ async function createNoiseSuppressedMicStream(rawStream){
       let sum=0;
       for(let i=0;i<input.length;i++) sum+=input[i]*input[i];
       const rms=Math.sqrt(sum/input.length);
-      // Плавно отслеживаем фон, но только когда сигнал тихий.
+      
       if(rms<0.035) noiseFloor=noiseFloor*0.985+rms*0.015;
       const open=Math.max(0.014,noiseFloor*2.8);
       const close=Math.max(0.009,noiseFloor*1.8);
-      const target=rms>open?1:(rms<close?0.10:gateGain);
-      gateGain += (target-gateGain)*(target>gateGain?0.35:0.08);
-      for(let i=0;i<input.length;i++) output[i]=input[i]*gateGain;
+      const target=rms>open?1:(rms<close?0.0:gateGain);
+      
+      // Сглаживание попиксельно (на выборку звука), убирающее щелчки затвора гейта
+      const factor = target > gateGain ? 0.08 : 0.02;
+      for(let i=0;i<input.length;i++) {
+        gateGain += (target - gateGain) * factor;
+        output[i]=input[i]*gateGain;
+      }
     };
     const dest=ctx.createMediaStreamDestination();
     src.connect(hp);hp.connect(lp);lp.connect(comp);comp.connect(gate);gate.connect(dest);
@@ -11124,14 +11158,28 @@ function openFloatingPlayer(tracks,startIdx=0){
 
   // Запускаем когда плеер показан
   const fp = document.getElementById('floatingPlayer');
+  let isFpVisible = false;
+
+  function updateAuroraState() {
+    if (document.visibilityState === 'hidden') {
+      stop();
+    } else if (isFpVisible) {
+      start();
+    }
+  }
+
   if(fp){
     const obs = new MutationObserver(()=>{
-      if(fp.classList.contains('show') && !fp.classList.contains('fp-minimized')) start();
-      else stop();
+      isFpVisible = (fp.classList.contains('show') && !fp.classList.contains('fp-minimized'));
+      updateAuroraState();
     });
     obs.observe(fp, {attributes:true, attributeFilter:['class']});
   }
-  window._fpAuroraStart=start; window._fpAuroraStop=stop;
+
+  document.addEventListener('visibilitychange', updateAuroraState);
+
+  window._fpAuroraStart = () => { isFpVisible = true; updateAuroraState(); };
+  window._fpAuroraStop = () => { isFpVisible = false; updateAuroraState(); };
 })();
 
 // ── Download current track ────────────────────────────────────
@@ -12044,6 +12092,10 @@ if('connection' in navigator){
 // ★ АУДИО FIX 8: при возврате из фона переподключаем голосовой чат
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'){
+    document.body.classList.remove('page-is-hidden');
+    currentPollInterval = 1500;
+    doPoll().catch(()=>{});
+
     // 1. Разблокируем AudioContext
     if(S.audioCtx?.state==='suspended') S.audioCtx.resume().catch(()=>{});
 
@@ -12078,6 +12130,8 @@ document.addEventListener('visibilitychange',()=>{
     }
   } else {
     // Фон: AudioContext может приостановиться — это нормально
+    document.body.classList.add('page-is-hidden');
+    currentPollInterval = 10000;
   }
 });
 
@@ -12124,6 +12178,7 @@ async function markCurrentChannelRead(){
   if(!S.chId||_markReadPending||!S.unread[S.chId]) return;
   _markReadPending=true;
   S.unread[S.chId]=0;S.mentionCount[S.chId]=0;
+  NOTIF_STORE.clearByKey('ch:'+S.chId);
   renderChannels();updateAllSrvDots();
   setStoredChLast(S.chId,S.lastMsgId);
   S.chLastIds[S.chId]=S.lastMsgId;
@@ -12899,15 +12954,24 @@ for(const p of(r.existing||[])){
     await voiceCreatePeer(p.userId,iAmInitiator);
   }
   clearInterval(VOICE.timer);
-  // ★ АУДИО FIX 5: интервал 1000мс вместо 2000мс для быстрого обмена ICE кандидатами
-  VOICE.timer=setInterval(voicePoll,1500);
+  let voiceIntervalTime = 1500;
+  const scheduleNextVoicePoll = () => {
+    if (!VOICE.timer) return;
+    VOICE.timer = setTimeout(async () => {
+      await voicePoll();
+      voiceIntervalTime = (document.visibilityState === 'hidden') ? 10000 : 1500;
+      scheduleNextVoicePoll();
+    }, voiceIntervalTime);
+  };
+  VOICE.timer = true;
+  scheduleNextVoicePoll();
   // Если в комнате уже идёт совместный просмотр — попросим текущее состояние.
   setTimeout(()=>{ if(VOICE.roomId===roomId) watchSend('watch-request-state',{}); }, 1800);
 }
 
 async function voiceLeave(silent=false){
   // 1. Немедленно останавливаем таймер, чтобы не было новых запросов
-  clearInterval(VOICE.timer);VOICE.timer=null;
+  if (VOICE.timer) { clearTimeout(VOICE.timer); VOICE.timer = null; }
 
   // 2. Останавливаем трансляцию экрана
   cleanupScreenAudioMix();
@@ -15939,7 +16003,7 @@ function buildMsgEl(m,prevMsg){
   let authorStyle='';
   if(member?.roleColor) authorStyle=`style="color:${esc(member.roleColor)}"`;
   const ts=fmtTime(m.at);
-  const avContent=member?.avatar&&member.avatar.startsWith('http')?`<img src="${member.avatar}" alt="">`:m.name?m.name[0]:ti('user',14);
+  const avContent=member?.avatar&&member.avatar.startsWith('http')?`<img src="${member.avatar}" alt="">`:avatarFallbackHtml(m.name, m.userId);
   let replyHtml='';
   if(m.replyPreview){const rp=m.replyPreview;replyHtml=`<div class="msg-reply-ref" onclick="scrollToMsg(${m.replyTo||0})"><span class="msg-reply-name">${esc(rp.name)}</span><span class="msg-reply-text">${esc(rp.text||'[файл]')}</span></div>`;}
   let fwdHtml='';
@@ -16198,11 +16262,28 @@ async function saveEditMsg(msgId){const ta=document.getElementById('editTA_'+msg
 function cancelEditMsg(msgId,newText,newHtml){const row=document.querySelector(`[data-msg-id="${msgId}"]`);if(!row) return;const msgBody=row.querySelector('.msg-body');if(!msgBody) return;const box=msgBody.querySelector('.msg-edit-box');if(box) box.remove();let textEl=msgBody.querySelector('.msg-text');if(newText&&textEl){textEl.style.display='';textEl.innerHTML=applyMarkdown(newText)+'<span class="msg-edited-tag"> (ред.)</span>';}else if(textEl){textEl.style.display='';}}
 
 // ── POLL ─────────────────────────────────────────────────────
+let currentPollInterval = 1500;
 function startPoll(){
-  if(S.pollTimer) clearInterval(S.pollTimer);
-  S.pollTimer=setInterval(doPoll,1500);
+  if(S.pollTimer) clearTimeout(S.pollTimer);
+  
+  const scheduleNextPoll = () => {
+    if (S.pollTimer) clearTimeout(S.pollTimer);
+    S.pollTimer = setTimeout(async () => {
+      await doPoll();
+      scheduleNextPoll();
+    }, currentPollInterval);
+  };
+
+  scheduleNextPoll();
   doPoll();
-  setInterval(pollTyping,2000);
+
+  if (window._typingTimer) clearInterval(window._typingTimer);
+  window._typingTimer = setInterval(() => {
+    if (document.visibilityState === 'visible') {
+      pollTyping();
+    }
+  }, 2000);
+
   setupReadObserver();
 }
 async function doPoll(){
@@ -16380,7 +16461,7 @@ function renderMembers(){
     arr.forEach(m=>{
       const d=document.createElement('div');d.className='mb-item';d.dataset.uid=m.id;
       const st=S.onlineUsers.find(u=>u.id===m.id)?.status||m.status||'offline';const isOnline=S.onlineUsers.some(u=>u.id===m.id)&&st!=='invisible';
-      const avContent=m.avatar&&m.avatar.startsWith('http')?`<img src="${m.avatar}" alt="">`:(m.name[0]||'?');
+      const avContent=m.avatar&&m.avatar.startsWith('http')?`<img src="${m.avatar}" alt="">`:avatarFallbackHtml(m.name,m.id);
       const roleIcon=m.role==='owner'?ti('crown',13):m.role==='admin'?ti('shield',13):m.role==='moderator'?ti('swords',13):'';
       const roleCls=m.role==='owner'?'role-owner':m.role==='admin'?'role-admin':m.role==='moderator'?'role-moderator':'';
       const gRoleIcon=m.globalRole==='super_admin'?`<span class="ti" style="display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;vertical-align:middle"><svg viewBox="0 0 24 24" width="14" height="14"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" stroke="currentColor" stroke-width="1.6" fill="currentColor" stroke-linejoin="round"/></svg></span>`:m.globalRole==='project_admin'?`<span class="ti" style="display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;vertical-align:middle"><svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8" fill="none"/><line x1="2" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z" stroke="currentColor" stroke-width="1.8" fill="none"/></svg></span>`:``;
